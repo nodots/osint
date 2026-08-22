@@ -11,7 +11,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
-    "seed:districts": "tsx --env-file-if-exists=.env src/ingest/seed-districts.ts"
+    "seed:districts": "tsx --env-file-if-exists=.env src/ingest/seed-districts.ts",
+    "seed:races": "tsx --env-file-if-exists=.env src/ingest/seed-races.ts",
+    "seed:candidates": "tsx --env-file-if-exists=.env src/ingest/seed-candidates.ts",
+    "seed:ratings": "tsx --env-file-if-exists=.env src/ingest/seed-ratings.ts"
   },
   "dependencies": {
     "@elections-tracker/shared": "workspace:*",
