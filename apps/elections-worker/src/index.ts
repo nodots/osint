@@ -1,5 +1,9 @@
 import { pool } from "./db.js";
-import { insertEvents, upsertCases } from "./services/ingest.js";
+import {
+  insertEvents,
+  refreshOperationalStatus,
+  upsertCases,
+} from "./services/ingest.js";
 import { runAssessments } from "./services/assess.js";
 import { finishRun, startRun } from "./services/runs.js";
 import { fetchVotingDockets } from "./sources/courtlistener.js";
@@ -37,12 +41,24 @@ async function runFederalRegister(from: Date): Promise<void> {
 async function runCourtListener(from: Date, mode: string): Promise<void> {
   const runId = await startRun("events:courtlistener");
   try {
-    const { events, cases } = await fetchVotingDockets(
+    const { events, cases, statusByExternalId } = await fetchVotingDockets(
       from,
       mode === "daily" ? 10 : 60,
     );
-    const eventCounts = await insertEvents(events);
+    // Cases first so events can carry related_case_id (§25 lifecycle links);
+    // then refresh operational status on rows we already had, so a docket
+    // terminating flips its event out of the vulnerability signals.
     const caseCounts = await upsertCases(cases);
+    const eventCounts = await insertEvents(
+      events.map(({ caseKey, ...event }) => ({
+        ...event,
+        relatedCaseId: caseCounts.ids.get(caseKey),
+      })),
+    );
+    const refreshed = await refreshOperationalStatus(
+      "courtlistener",
+      statusByExternalId,
+    );
     await finishRun(runId, {
       status: "success",
       recordsSeen: eventCounts.seen,
@@ -51,7 +67,7 @@ async function runCourtListener(from: Date, mode: string): Promise<void> {
     });
     console.log(
       `events[courtlistener] seen=${eventCounts.seen} inserted=${eventCounts.inserted} ` +
-        `cases-new=${caseCounts.inserted}`,
+        `cases-new=${caseCounts.inserted} status-refreshed=${refreshed}`,
     );
   } catch (err) {
     await finishRun(runId, {

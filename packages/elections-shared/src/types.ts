@@ -185,6 +185,9 @@ export interface RiskAssessment {
   recountExposure: number;
   congressionalContestExposure: number;
   processVulnerability: number;
+  // 2026.09.1 components; null on rows computed under earlier versions.
+  institutionalResistance: number | null;
+  activePressure: number | null;
   subversionRisk: number;
   confidence: number;
   explanations: unknown;

@@ -133,6 +133,14 @@ export const events = pgTable(
     confidence: numeric("confidence").notNull().default("0.5"),
     affectedRaceIds: integer("affected_race_ids").array().notNull().default([]),
     affectedMechanisms: text("affected_mechanisms").array().notNull().default([]),
+    // Causal lifecycle (methodology doc §25): filed → dismissed → appealed is
+    // one chain, not unrelated events.
+    parentEventId: integer("parent_event_id"),
+    supersedesEventId: integer("supersedes_event_id"),
+    relatedCaseId: integer("related_case_id"),
+    // Materiality gate (§24): immaterial events are stored intelligence but
+    // never move risk signals.
+    material: boolean("material").notNull().default(true),
     rawData: jsonb("raw_data"),
     // Editorial trail (spec §32): no silent edits.
     enteredBy: text("entered_by"),
@@ -234,6 +242,10 @@ export const raceRiskAssessments = pgTable(
       "congressional_contest_exposure",
     ).notNull(),
     processVulnerability: numeric("process_vulnerability").notNull(),
+    // 2026.09.1 components (nullable so pre-2026.09 rows stay reproducible):
+    // resistance suppresses vulnerability, active pressure scales relevance.
+    institutionalResistance: numeric("institutional_resistance"),
+    activePressure: numeric("active_pressure"),
     subversionRisk: numeric("subversion_risk").notNull(),
     confidence: numeric("confidence").notNull().default("0.5"),
     explanations: jsonb("explanations"),

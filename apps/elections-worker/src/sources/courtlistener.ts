@@ -29,10 +29,19 @@ export function stateFromCourtId(courtId: string): string | null {
   return match ? match[1]!.toUpperCase() : null;
 }
 
+export interface VotingDocketBatch {
+  // Events carry the "docketNumber|court" key of their case so the caller can
+  // link related_case_id after the case upsert.
+  events: (SourceEvent & { caseKey: string })[];
+  cases: SourceCase[];
+  // Lifecycle refresh input: docket id -> current operational status.
+  statusByExternalId: Map<string, string>;
+}
+
 export async function fetchVotingDockets(
   from: Date,
   maxPages = 10,
-): Promise<{ events: SourceEvent[]; cases: SourceCase[] }> {
+): Promise<VotingDocketBatch> {
   const filedAfter = `${String(from.getUTCMonth() + 1).padStart(2, "0")}/${String(
     from.getUTCDate(),
   ).padStart(2, "0")}/${from.getUTCFullYear()}`;
@@ -60,12 +69,17 @@ export async function fetchVotingDockets(
     url = body.next ?? null;
   }
 
-  const events: SourceEvent[] = [];
+  const events: (SourceEvent & { caseKey: string })[] = [];
   const cases: SourceCase[] = [];
+  const statusByExternalId = new Map<string, string>();
   for (const r of results) {
     if (!r.docketNumber) continue;
     const state = stateFromCourtId(r.court_id);
     const parties = (r.party ?? []).slice(0, 6).join(", ");
+    statusByExternalId.set(
+      String(r.docket_id),
+      r.dateTerminated ? "EXPIRED" : "ACTIVE",
+    );
     cases.push({
       name: r.caseName,
       docketNumber: r.docketNumber,
@@ -76,6 +90,8 @@ export async function fetchVotingDockets(
       affectedStates: state ? [state] : [],
     });
     events.push({
+      caseKey: `${r.docketNumber}|${r.court}`,
+      material: true,
       source: "courtlistener",
       externalId: String(r.docket_id),
       occurredAt: `${r.dateFiled ?? from.toISOString().slice(0, 10)}T00:00:00Z`,
@@ -97,5 +113,5 @@ export async function fetchVotingDockets(
       },
     });
   }
-  return { events, cases };
+  return { events, cases, statusByExternalId };
 }

@@ -154,6 +154,12 @@ racesRouter.get("/:districtId", async (req, res, next) => {
         recountExposure: Number(a.recount_exposure),
         congressionalContestExposure: Number(a.congressional_contest_exposure),
         processVulnerability: Number(a.process_vulnerability),
+        institutionalResistance:
+          a.institutional_resistance == null
+            ? null
+            : Number(a.institutional_resistance),
+        activePressure:
+          a.active_pressure == null ? null : Number(a.active_pressure),
         subversionRisk: Number(a.subversion_risk),
         confidence: Number(a.confidence),
         explanations: a.explanations,

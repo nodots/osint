@@ -6,7 +6,11 @@
 
 // 2026.08.2: vulnerability dimensions become derived signals (see
 // derivation.ts) instead of analyst-entered values; weights unchanged.
-export const METHODOLOGY_VERSION = "2026.08.2";
+// 2026.09.1: institutional resistance suppresses vulnerability, active
+// pressure scales relevance, electoral exposure goes additive, decay is
+// per event class, and a materiality gate keeps routine paperwork out of
+// the signals (after the v0.1 methodology spec).
+export const METHODOLOGY_VERSION = "2026.09.1";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {

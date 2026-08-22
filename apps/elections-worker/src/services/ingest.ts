@@ -22,6 +22,9 @@ export interface SourceEvent {
   factualStatus: FactualStatus;
   operationalStatus: OperationalStatus;
   confidence: number;
+  // Materiality gate (§24): immaterial events are stored but never move risk.
+  material: boolean;
+  relatedCaseId?: number;
   rawData: Record<string, unknown>;
 }
 
@@ -45,8 +48,9 @@ export async function insertEvents(
     await pool.query(
       `INSERT INTO events (occurred_at, jurisdiction_type, jurisdictions,
                            event_types, title, summary, factual_status,
-                           operational_status, confidence, raw_data, entered_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                           operational_status, confidence, material,
+                           related_case_id, raw_data, entered_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         event.occurredAt,
         event.jurisdictionType,
@@ -57,6 +61,8 @@ export async function insertEvents(
         event.factualStatus,
         event.operationalStatus,
         event.confidence,
+        event.material,
+        event.relatedCaseId ?? null,
         JSON.stringify({
           source: event.source,
           externalId: event.externalId,
@@ -85,23 +91,33 @@ export interface SourceCase {
 }
 
 // Upsert litigation on (docket_number, court) — there's no DB constraint, so
-// the match is an explicit update-then-insert inside one transaction per case.
+// the match is an explicit update-then-insert. Returns each case's row id
+// keyed by "docketNumber|court" so events can link via related_case_id.
 export async function upsertCases(
   cases: SourceCase[],
-): Promise<{ seen: number; inserted: number; skipped: number }> {
+): Promise<{
+  seen: number;
+  inserted: number;
+  skipped: number;
+  ids: Map<string, number>;
+}> {
   let inserted = 0;
+  const ids = new Map<string, number>();
   for (const c of cases) {
     const status = c.terminated ? "CLOSED" : "ACTIVE";
     const updated = await pool.query(
       `UPDATE cases SET status = $3, name = $4
-        WHERE docket_number = $1 AND court = $2`,
+        WHERE docket_number = $1 AND court = $2
+        RETURNING id`,
       [c.docketNumber, c.court, status, c.name],
     );
+    let id: number;
     if (updated.rowCount === 0) {
-      await pool.query(
+      const insertedRow = await pool.query(
         `INSERT INTO cases (name, docket_number, court, jurisdiction, filed_at,
                             status, affected_states)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
         [
           c.name,
           c.docketNumber,
@@ -112,8 +128,33 @@ export async function upsertCases(
           c.affectedStates,
         ],
       );
+      id = insertedRow.rows[0].id;
       inserted++;
+    } else {
+      id = updated.rows[0].id;
     }
+    ids.set(`${c.docketNumber}|${c.court}`, id);
   }
-  return { seen: cases.length, inserted, skipped: cases.length - inserted };
+  return { seen: cases.length, inserted, skipped: cases.length - inserted, ids };
+}
+
+// Lifecycle refresh (§25): when a source reports an event's operational
+// status changed (e.g. a docket terminated), update the existing row rather
+// than inserting a duplicate.
+export async function refreshOperationalStatus(
+  source: string,
+  statusByExternalId: Map<string, string>,
+): Promise<number> {
+  let updated = 0;
+  for (const [externalId, status] of statusByExternalId) {
+    const result = await pool.query(
+      `UPDATE events SET operational_status = $3, updated_at = now(),
+              last_modified_by = $4
+        WHERE raw_data->>'source' = $1 AND raw_data->>'externalId' = $2
+          AND operational_status <> $3`,
+      [source, externalId, status, `worker:${source}`],
+    );
+    updated += result.rowCount ?? 0;
+  }
+  return updated;
 }

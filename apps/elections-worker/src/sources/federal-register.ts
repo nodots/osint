@@ -134,7 +134,13 @@ export async function fetchFederalRegisterEvents(
       types: ["ELECTION_ADMINISTRATION"] as EventType[],
       op: "ACTIVE" as OperationalStatus,
     };
+    // Materiality (§24): routine agency paperwork is stored intelligence, not
+    // a risk-moving event.
+    const material = !/sunshine act|information collection|privacy act|meetings?\b|agenda/i.test(
+      doc.title,
+    );
     events.push({
+      material,
       source: "federal_register",
       externalId: doc.document_number,
       occurredAt: `${doc.publication_date}T00:00:00Z`,

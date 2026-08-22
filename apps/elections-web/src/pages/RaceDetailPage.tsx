@@ -14,7 +14,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import {
-  subversionRelevance,
+  riskLevel,
   type RaceDetail,
   type RiskAssessment,
 } from "@elections-tracker/shared";
@@ -37,6 +37,31 @@ function level(value: number): string {
   if (value < 0.75) return "HIGH";
   return "VERY HIGH";
 }
+
+interface ExplanationEntry {
+  dimension: string;
+  value: number;
+  evidence: number[];
+}
+
+// Shape written by the worker's assessment pass (methodology 2026.09.1).
+interface Explanations {
+  drivers?: ExplanationEntry[];
+  mitigations?: ExplanationEntry[];
+}
+
+const DIMENSION_NAMES: Record<string, string> = {
+  federalLeverage: "Federal leverage",
+  stateCooperation: "State cooperation",
+  administrativeExposure: "Administrative exposure",
+  voterRollExposure: "Voter-roll exposure",
+  ballotExposure: "Ballot exposure",
+  litigationExposure: "Litigation exposure",
+  certificationExposure: "Certification exposure",
+  recountExposure: "Recount exposure",
+  congressionalContestExposure: "Congressional contest exposure",
+  institutionalResistance: "Institutional resistance",
+};
 
 const DRIVER_LABELS: [keyof RiskAssessment, string][] = [
   ["federalLeverage", "Federal leverage"],
@@ -214,19 +239,28 @@ export function RaceDetailPage() {
             {latest ? (
               <>
                 <Row
+                  label="Intervention relevance"
+                  value={`${Math.round(latest.subversionRisk * 100)} ${riskLevel(latest.subversionRisk * 100).replace("_", " ")}`}
+                />
+                <Row
                   label="Process vulnerability"
                   value={`${Math.round(latest.processVulnerability * 100)} ${level(latest.processVulnerability)}`}
                 />
+                {latest.institutionalResistance != null && (
+                  <Row
+                    label="Institutional resistance"
+                    value={`${Math.round(latest.institutionalResistance * 100)} ${level(latest.institutionalResistance)}`}
+                  />
+                )}
+                {latest.activePressure != null && (
+                  <Row
+                    label="Active intervention pressure"
+                    value={`${Math.round(latest.activePressure * 100)} ${level(latest.activePressure)}`}
+                  />
+                )}
                 <Row
                   label="Pivotality"
                   value={`${Math.round(latest.pivotality * 100)}%`}
-                />
-                <Row
-                  label="Subversion relevance"
-                  value={subversionRelevance(latest.subversionRisk).replace(
-                    "_",
-                    " ",
-                  )}
                 />
                 <Row
                   label="Assessed"
@@ -243,6 +277,9 @@ export function RaceDetailPage() {
                     value={level(latest[key] as number)} // DRIVER_LABELS only lists numeric dimension keys
                   />
                 ))}
+                <WhyBlock
+                  explanations={latest.explanations as Explanations | null} // worker-written JSON; rendered defensively
+                />
               </>
             ) : (
               <Typography color="text.secondary" variant="body2">
@@ -324,6 +361,47 @@ export function RaceDetailPage() {
         </Grid>
       </Grid>
     </Box>
+  );
+}
+
+// §48 "WHY?" block: what pushes risk up, what holds it down, with evidence
+// counts. Values come straight from the assessment's explanation payload.
+function WhyBlock({ explanations }: { explanations: Explanations | null }) {
+  const drivers = (explanations?.drivers ?? []).slice(0, 3);
+  const mitigations = (explanations?.mitigations ?? []).filter(
+    (m) => m.value > 0,
+  );
+  if (drivers.length === 0 && mitigations.length === 0) return null;
+  return (
+    <>
+      <Divider sx={{ my: 1.5 }} />
+      <Typography variant="overline" color="text.secondary">
+        Why
+      </Typography>
+      {drivers.map((d) => (
+        <Typography key={d.dimension} variant="body2" sx={{ py: 0.25 }}>
+          ↑ {DIMENSION_NAMES[d.dimension] ?? d.dimension} (
+          {Math.round(d.value * 100)}
+          {d.evidence.length > 0 &&
+            `, ${d.evidence.length} evidence event${d.evidence.length === 1 ? "" : "s"}`}
+          )
+        </Typography>
+      ))}
+      {mitigations.map((m) => (
+        <Typography
+          key={m.dimension}
+          variant="body2"
+          color="text.secondary"
+          sx={{ py: 0.25 }}
+        >
+          ↓ {DIMENSION_NAMES[m.dimension] ?? m.dimension} (
+          {Math.round(m.value * 100)}
+          {m.evidence.length > 0 &&
+            `, ${m.evidence.length} evidence event${m.evidence.length === 1 ? "" : "s"}`}
+          )
+        </Typography>
+      ))}
+    </>
   );
 }
 

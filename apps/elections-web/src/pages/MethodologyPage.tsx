@@ -3,10 +3,14 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import {
   CASE_WEIGHT,
-  HALF_LIFE_DAYS,
   METHODOLOGY_VERSION,
+  NATIONAL_RESISTANCE_WEIGHT,
   NATIONAL_SPILLOVER,
+  PRESSURE_FLOOR,
+  PRESSURE_HALF_LIFE_DAYS,
+  PROPOSAL_HALF_LIFE_DAYS,
   RATINGS_VERSION,
+  RESISTANCE_SUPPRESSION,
   SATURATION_K,
   VULNERABILITY_WEIGHTS,
 } from "@elections-tracker/shared";
@@ -48,17 +52,34 @@ export function MethodologyPage() {
         Dimension derivation
       </Typography>
       <Typography variant="body1">
-        Each dimension is a saturating function of the evidence behind it. An
-        event&apos;s weight decays with a {HALF_LIFE_DAYS}-day half-life; a
-        dimension&apos;s signal is the sum of weights over its mapped event
-        types (litigation also counts {CASE_WEIGHT} per active voting-rights
-        case in the state); the published value is 1 − e^(−signal/
-        {SATURATION_K}). Nationwide events contribute at full weight to
-        federal leverage and at {NATIONAL_SPILLOVER} to a state&apos;s other
-        dimensions. Pivotality is competitiveness scaled by how tight the
-        projected House majority is. Confidence grows with the weighted
-        evidence and is capped at 0.8 — this is a signal model, not ground
-        truth.
+        Each dimension is a saturating function of the evidence behind it: the
+        signal is the sum of event weights over the dimension&apos;s mapped
+        event types (litigation also counts {CASE_WEIGHT} per active
+        voting-rights case in the state), and the published value is 1 −
+        e^(−signal/{SATURATION_K}). An event&apos;s weight depends on its
+        status and class, not a single clock: rules and injunctions in force
+        hold full weight until they change status, proposals decay with a{" "}
+        {PROPOSAL_HALF_LIFE_DAYS}-day half-life, and pressure-class events
+        (directives, data requests, investigations, filings) decay with a{" "}
+        {PRESSURE_HALF_LIFE_DAYS}-day half-life. Nationwide events contribute
+        at full weight to federal leverage and at {NATIONAL_SPILLOVER} to a
+        state&apos;s other dimensions.
+      </Typography>
+      <Typography variant="body1">
+        Blocked, enjoined, or overturned actions stop feeding vulnerability
+        and feed institutional resistance instead (nationwide blocks at{" "}
+        {NATIONAL_RESISTANCE_WEIGHT} weight per state), and vulnerability is
+        suppressed by V = RawV × (1 − {RESISTANCE_SUPPRESSION}·D). Active
+        intervention pressure — whether mechanisms are actually being
+        exercised — is a separate saturating signal, and the published risk is
+        Intervention Relevance = E × V × ({PRESSURE_FLOOR} + {1 -
+        PRESSURE_FLOOR}·A), where electoral exposure E is the mean of
+        competitiveness and pivotality. Pivotality is competitiveness scaled
+        by how tight the projected House majority is. Routine agency
+        paperwork fails a materiality test and never moves the signals.
+        Confidence grows with the weighted evidence and is capped at 0.8 —
+        this is a signal model, not ground truth, and the index is an ordinal
+        ranking, never a probability that an election will be altered.
       </Typography>
       <Typography variant="body1">
         Events currently flow from the Federal Register (rules, notices, and
