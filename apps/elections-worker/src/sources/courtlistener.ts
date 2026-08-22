@@ -1,4 +1,5 @@
 import type { SourceCase, SourceEvent } from "../services/ingest.js";
+import { fetchWithRetry } from "../services/http.js";
 
 // CourtListener (Free Law Project) RECAP search — federal dockets with
 // nature-of-suit 441 "Civil Rights: Voting", the civil cover sheet's own
@@ -24,6 +25,12 @@ interface ClResult {
 
 // District-court ids embed the state postal code: "ord" → OR, "cand" → CA,
 // "txsd" → TX. Appellate/circuit ids don't parse and map to null.
+export function usDate(d: Date): string {
+  return `${String(d.getUTCMonth() + 1).padStart(2, "0")}/${String(
+    d.getUTCDate(),
+  ).padStart(2, "0")}/${d.getUTCFullYear()}`;
+}
+
 export function stateFromCourtId(courtId: string): string | null {
   const match = /^([a-z]{2})(?:[nsewmc]{1,2})?d$/.exec(courtId);
   return match ? match[1]!.toUpperCase() : null;
@@ -51,13 +58,16 @@ export async function fetchVotingDockets(
   }
 
   const results: ClResult[] = [];
+  const until = process.env.INGEST_UNTIL
+    ? `&filed_before=${encodeURIComponent(usDate(new Date(`${process.env.INGEST_UNTIL}T00:00:00Z`)))}`
+    : "";
   let url: string | null =
     `${API}?type=r&q=${encodeURIComponent('suitNature:"voting"')}` +
-    `&filed_after=${encodeURIComponent(filedAfter)}&order_by=${encodeURIComponent("dateFiled desc")}`;
+    `&filed_after=${encodeURIComponent(filedAfter)}${until}&order_by=${encodeURIComponent("dateFiled desc")}`;
   // Cursor pagination; the page cap bounds a runaway window (backfill passes
   // a higher cap than the daily run).
   for (let page = 0; url && page < maxPages; page++) {
-    const res = await fetch(url, { headers });
+    const res = await fetchWithRetry(url, { headers });
     if (!res.ok) {
       throw new Error(`courtlistener: ${res.status} ${res.statusText}`);
     }

@@ -29,7 +29,8 @@ import { pool } from "../db.js";
 // resistance, expired ones feed nothing. Active pressure tracks recent
 // exercise of intervention mechanisms. Append-only, unchanged races skipped.
 
-const WINDOW_DAYS = 540; // covers the spec §34 history start before the 2026 general
+const WINDOW_DAYS = 540; // covers the spec §34 history start before a general
+const ELECTION_CYCLE = Number(process.env.ELECTION_CYCLE ?? 2026);
 const DIMENSIONS = Object.keys(
   DIMENSION_EVENT_TYPES,
 ) as (keyof VulnerabilityDimensions)[];
@@ -137,7 +138,7 @@ export async function runAssessments(
          FROM races r
          JOIN districts d ON d.id = r.district_id
          JOIN elections e ON e.id = r.election_id
-        WHERE e.election_type = 'HOUSE' AND e.cycle = 2026`,
+        WHERE e.election_type = 'HOUSE' AND e.cycle = ${ELECTION_CYCLE}`,
     ),
     pool.query<{ dem: number; rep: number }>(
       `SELECT count(*) FILTER (WHERE projected_margin > 0

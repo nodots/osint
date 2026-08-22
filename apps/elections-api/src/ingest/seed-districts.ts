@@ -15,7 +15,7 @@ const CENSUS_ZIP_URL =
   process.env.CENSUS_CD_ZIP_URL ??
   "https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_us_cd119_500k.zip";
 
-const CYCLE = 2026;
+const CYCLE = Number(process.env.ELECTION_CYCLE ?? 2026);
 
 // State FIPS → USPS for the 50 states. DC (11) and the territories elect
 // non-voting delegates (CD code 98) and are excluded from the House count.
@@ -48,8 +48,15 @@ const STATE_NAMES: Record<string, string> = {
 
 interface CdProperties {
   STATEFP: string;
-  CD119FP: string;
   NAMELSAD: string;
+  // The district-code field is congress-numbered (CD118FP, CD119FP, ...);
+  // resolved per file below.
+  [key: string]: string;
+}
+
+function cdField(props: CdProperties): string | null {
+  const key = Object.keys(props).find((k) => /^CD\d+FP$/.test(k));
+  return key ? (props[key] ?? null) : null;
 }
 
 async function loadZip(): Promise<Uint8Array> {
@@ -98,15 +105,16 @@ async function main() {
       const feature = result.value;
       const props = feature.properties as unknown as CdProperties; // shapefile types properties as GeoJsonProperties (nullable bag); the DBF schema is fixed
       const state = STATE_FIPS[props.STATEFP];
+      const cd = cdField(props);
       // "98" is the non-voting-delegate code (DC, PR, territories); "ZZ" marks
       // area undefined in any district.
-      if (!state || props.CD119FP === "98" || props.CD119FP === "ZZ") {
+      if (!state || cd == null || cd === "98" || cd === "ZZ") {
         skipped++;
         continue;
       }
-      const atLarge = props.CD119FP === "00";
-      const districtNumber = atLarge ? 0 : Number(props.CD119FP);
-      const id = atLarge ? `${state}-AL` : `${state}-${props.CD119FP}`;
+      const atLarge = cd === "00";
+      const districtNumber = atLarge ? 0 : Number(cd);
+      const id = atLarge ? `${state}-AL` : `${state}-${cd}`;
       const displayName = atLarge
         ? `${STATE_NAMES[state]} At-Large`
         : `${STATE_NAMES[state]} ${districtNumber}${ordinal(districtNumber)} District`;

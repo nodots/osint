@@ -41,7 +41,7 @@ districtsRouter.get("/geojson", async (_req, res, next) => {
                ON r.district_id = d.id
               AND r.election_id = (
                     SELECT id FROM elections
-                     WHERE election_type = 'HOUSE' AND cycle = 2026
+                     WHERE election_type = 'HOUSE' ORDER BY cycle DESC
                      LIMIT 1
                   )
             WHERE d.geom IS NOT NULL

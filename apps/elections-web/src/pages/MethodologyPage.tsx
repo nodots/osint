@@ -199,6 +199,24 @@ export function MethodologyPage() {
       </Typography>
 
       <Typography variant="h6" sx={{ fontWeight: 300 }}>
+        Backtesting
+      </Typography>
+      <Typography variant="body1">
+        The identical pipeline was replayed against the 2022 and 2024 cycles
+        (that cycle&apos;s districts, candidates, derived ratings, and the
+        era&apos;s events from the same sources; 100-day assessment replays
+        ending on each election day). Ordinary cycles read zero high-risk
+        pivotal races essentially the entire run-up — 2022 never left zero,
+        2024 touched three only in its final days. On matched sources at the
+        same distance from election day, 2026 reads four — a state neither
+        baseline reached before its final week — and seventeen with the state
+        legislation source, which has no historical counterpart and is
+        therefore excluded from cross-cycle comparisons. Full tables,
+        source-parity checks, and limitations are published in the
+        repository&apos;s backtest report.
+      </Typography>
+
+      <Typography variant="h6" sx={{ fontWeight: 300 }}>
         Known limitations
       </Typography>
       <Typography component="div" variant="body2">

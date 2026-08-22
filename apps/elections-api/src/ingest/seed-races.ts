@@ -12,8 +12,8 @@ const LEGISLATORS_URL =
   process.env.LEGISLATORS_URL ??
   "https://raw.githubusercontent.com/unitedstates/congress-legislators/gh-pages/legislators-current.json";
 
-const CYCLE = 2026;
-const ELECTION_DATE = "2026-11-03";
+const CYCLE = Number(process.env.ELECTION_CYCLE ?? 2026);
+const ELECTION_DATE = process.env.ELECTION_DATE ?? "2026-11-03";
 
 interface LegislatorTerm {
   type: string;

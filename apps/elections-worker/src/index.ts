@@ -229,7 +229,9 @@ async function main() {
         ? new Date(
             new Date(now).setMonth(now.getMonth() - Number(process.env.BACKFILL_MONTHS)),
           )
-        : new Date("2025-01-20T00:00:00Z"); // spec §34 history start
+        : new Date(
+            `${process.env.INGEST_FROM ?? "2025-01-20"}T00:00:00Z`,
+          ); // spec §34 history start; INGEST_FROM overrides for baselines
 
   console.log(
     `ingest mode=${mode} from=${from.toISOString().slice(0, 10)} to=${now

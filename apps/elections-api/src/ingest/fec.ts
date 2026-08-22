@@ -4,9 +4,13 @@ import { unzipSync } from "fflate";
 // ratings seeds. U.S. government work, public domain, no API key or rate
 // limit. Layout: https://www.fec.gov/campaign-finance-data/candidate-master-file-description/
 
+// Cycle-parameterized (ELECTION_CYCLE) so historical baselines replay the
+// identical pipeline against past elections.
+export const ELECTION_CYCLE = Number(process.env.ELECTION_CYCLE ?? 2026);
+const YY = String(ELECTION_CYCLE % 100).padStart(2, "0");
 export const FEC_CN_URL =
   process.env.FEC_CN_URL ??
-  "https://www.fec.gov/files/bulk-downloads/2026/cn26.zip";
+  `https://www.fec.gov/files/bulk-downloads/${ELECTION_CYCLE}/cn${YY}.zip`;
 
 export interface FecCandidate {
   candId: string;
@@ -44,7 +48,7 @@ export async function loadZipEntry(
   return entry;
 }
 
-// 2026-cycle statutory House candidates (CAND_STATUS "C").
+// Cycle statutory House candidates (CAND_STATUS "C").
 export function parseHouseCandidates(cnTxt: Uint8Array): FecCandidate[] {
   const out: FecCandidate[] = [];
   for (const line of new TextDecoder().decode(cnTxt).split("\n")) {
@@ -52,7 +56,7 @@ export function parseHouseCandidates(cnTxt: Uint8Array): FecCandidate[] {
     const f = line.split("|");
     // CAND_ID|CAND_NAME|CAND_PTY_AFFILIATION|CAND_ELECTION_YR|CAND_OFFICE_ST|
     // CAND_OFFICE|CAND_OFFICE_DISTRICT|CAND_ICI|CAND_STATUS|...
-    if (f[5] !== "H" || f[3] !== "2026" || f[8] !== "C") continue;
+    if (f[5] !== "H" || f[3] !== String(ELECTION_CYCLE) || f[8] !== "C") continue;
     out.push({
       candId: f[0] ?? "",
       name: f[1] ?? "",

@@ -1,6 +1,7 @@
 import type { EventType } from "@elections-tracker/shared";
+import { fetchWithRetry } from "../services/http.js";
 import type { SourceCase, SourceEvent } from "../services/ingest.js";
-import { stateFromCourtId } from "./courtlistener.js";
+import { stateFromCourtId, usDate } from "./courtlistener.js";
 
 // CourtListener RECAP docket entries: injunction/TRO orders in voting cases
 // (nature of suit 441). This is the ruling-direction source the resistance
@@ -93,12 +94,15 @@ export async function fetchVotingRulings(
   }
 
   const dockets: ClRulingDocket[] = [];
+  const until = process.env.INGEST_UNTIL
+    ? `&entry_date_filed_before=${encodeURIComponent(usDate(new Date(`${process.env.INGEST_UNTIL}T00:00:00Z`)))}`
+    : "";
   let url: string | null =
     `${API}?type=r&q=${encodeURIComponent(QUERY)}` +
-    `&entry_date_filed_after=${encodeURIComponent(after)}` +
+    `&entry_date_filed_after=${encodeURIComponent(after)}${until}` +
     `&order_by=${encodeURIComponent("dateFiled desc")}`;
   for (let page = 0; url && page < maxPages; page++) {
-    const res = await fetch(url, { headers });
+    const res = await fetchWithRetry(url, { headers });
     if (!res.ok) {
       throw new Error(`courtlistener rulings: ${res.status} ${res.statusText}`);
     }
@@ -122,9 +126,15 @@ export async function fetchVotingRulings(
       if (!doc.description || !doc.entry_date_filed) continue;
       const direction = classifyRuling(doc.description);
       if (!direction) continue;
-      // Entries can predate the window on backfilled dockets; the search
-      // filter is docket-level, so window the entries ourselves.
+      // Entries can predate/postdate the window on backfilled dockets; the
+      // search filter is docket-level, so window the entries ourselves.
       if (new Date(`${doc.entry_date_filed}T00:00:00Z`) < from) continue;
+      if (
+        process.env.INGEST_UNTIL &&
+        doc.entry_date_filed > process.env.INGEST_UNTIL
+      ) {
+        continue;
+      }
       docketHasRuling = true;
       const blocks = direction === "BLOCKS";
       const types: EventType[] = blocks

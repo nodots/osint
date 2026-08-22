@@ -1,4 +1,6 @@
 import type { EventType } from "@elections-tracker/shared";
+import { fetchWithRetry } from "../services/http.js";
+import { usDate } from "./courtlistener.js";
 import type { SourceEvent } from "../services/ingest.js";
 
 const RULING_TYPES: EventType[] = ["SCOTUS_ACTION", "COURT_RULING"];
@@ -33,11 +35,14 @@ export async function fetchScotusOpinions(from: Date): Promise<SourceEvent[]> {
   }
 
   const results: ScotusResult[] = [];
+  const until = process.env.INGEST_UNTIL
+    ? `&filed_before=${encodeURIComponent(usDate(new Date(`${process.env.INGEST_UNTIL}T00:00:00Z`)))}`
+    : "";
   let url: string | null =
     `${API}?type=o&court=scotus&q=${encodeURIComponent(QUERY)}` +
-    `&filed_after=${encodeURIComponent(after)}&order_by=${encodeURIComponent("dateFiled desc")}`;
+    `&filed_after=${encodeURIComponent(after)}${until}&order_by=${encodeURIComponent("dateFiled desc")}`;
   for (let page = 0; url && page < 5; page++) {
-    const res = await fetch(url, { headers });
+    const res = await fetchWithRetry(url, { headers });
     if (!res.ok) {
       throw new Error(`courtlistener scotus: ${res.status} ${res.statusText}`);
     }

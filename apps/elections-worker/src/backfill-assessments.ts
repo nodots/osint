@@ -15,6 +15,14 @@ import { runAssessments } from "./services/assess.js";
 const args = process.argv.slice(2);
 const days = Number(args[args.indexOf("--days") + 1] || 30);
 const wipe = args.includes("--wipe");
+// --until YYYY-MM-DD replays a window ENDING on that date (default today) —
+// how historical baselines (§43 backtesting) replay the run-up to a past
+// election day.
+const untilArg = args[args.indexOf("--until") + 1];
+const until =
+  args.includes("--until") && untilArg
+    ? new Date(`${untilArg}T12:00:00Z`)
+    : new Date();
 
 async function main() {
   if (!wipe) {
@@ -31,12 +39,13 @@ async function main() {
   await pool.query("DELETE FROM race_risk_assessments");
   console.log(`history wiped; replaying ${days} days`);
 
+  const historical = until.toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10);
   for (let back = days; back >= 0; back--) {
     // Noon UTC keeps every stamp unambiguously inside its calendar day.
     const asOf = new Date(
-      `${new Date(Date.now() - back * 86400000).toISOString().slice(0, 10)}T12:00:00Z`,
+      `${new Date(until.getTime() - back * 86400000).toISOString().slice(0, 10)}T12:00:00Z`,
     );
-    const counts = await runAssessments(asOf, back > 0);
+    const counts = await runAssessments(asOf, historical || back > 0);
     console.log(
       `${asOf.toISOString().slice(0, 10)}: appended=${counts.inserted} unchanged=${counts.skipped}`,
     );

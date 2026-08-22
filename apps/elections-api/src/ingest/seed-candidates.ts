@@ -15,9 +15,11 @@ import {
 // Usage:
 //   pnpm --filter @elections-tracker/api seed:candidates [cn26.zip] [weball26.zip]
 
+import { ELECTION_CYCLE } from "./fec.js";
+
 const FEC_WEBALL_URL =
   process.env.FEC_WEBALL_URL ??
-  "https://www.fec.gov/files/bulk-downloads/2026/weball26.zip";
+  `https://www.fec.gov/files/bulk-downloads/${ELECTION_CYCLE}/weball${String(ELECTION_CYCLE % 100).padStart(2, "0")}.zip`;
 
 function parseReceipts(weballTxt: Uint8Array): Map<string, number> {
   const receipts = new Map<string, number>();
@@ -66,10 +68,10 @@ async function main() {
     const races = await client.query(
       `SELECT r.id, r.district_id FROM races r
         JOIN elections e ON e.id = r.election_id
-       WHERE e.election_type = 'HOUSE' AND e.cycle = 2026`,
+       WHERE e.election_type = 'HOUSE' AND e.cycle = ${ELECTION_CYCLE}`,
     );
     if (races.rows.length === 0) {
-      throw new Error("no 2026 House races — run seed:races first");
+      throw new Error(`no ${ELECTION_CYCLE} House races — run seed:races first`);
     }
     const raceDistricts = new Set(races.rows.map((r) => r.district_id));
     for (const key of chosen.keys()) {

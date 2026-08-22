@@ -79,6 +79,12 @@ export async function fetchElectionBills(
     console.log("openstates skipped — OPENSTATES_API_KEY not set");
     return [];
   }
+  if (process.env.INGEST_UNTIL) {
+    // The API filters by record-update time, which cannot time-travel;
+    // including it would leak present-day data into a historical baseline.
+    console.log("openstates skipped — historical build (INGEST_UNTIL set)");
+    return [];
+  }
 
   const byId = new Map<string, { bill: OsBill; matched: string }>();
   for (const term of TERM_QUERIES) {

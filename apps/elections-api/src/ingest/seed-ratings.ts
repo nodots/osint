@@ -1,6 +1,7 @@
 import { RATINGS_VERSION, deriveRating } from "@elections-tracker/shared";
 import { pool } from "../db/client.js";
 import {
+  ELECTION_CYCLE,
   FEC_CN_URL,
   fecDistrictId,
   loadZipEntry,
@@ -161,10 +162,10 @@ async function main() {
     const races = await client.query(
       `SELECT r.id, r.district_id FROM races r
         JOIN elections e ON e.id = r.election_id
-       WHERE e.election_type = 'HOUSE' AND e.cycle = 2026`,
+       WHERE e.election_type = 'HOUSE' AND e.cycle = ${ELECTION_CYCLE}`,
     );
     if (races.rows.length === 0) {
-      throw new Error("no 2026 House races — run seed:races first");
+      throw new Error(`no ${ELECTION_CYCLE} House races — run seed:races first`);
     }
     for (const row of races.rows) {
       const derived = deriveRating({

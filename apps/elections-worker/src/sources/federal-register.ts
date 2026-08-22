@@ -82,6 +82,9 @@ async function fetchQuery(
     "conditions[publication_date][gte]",
     from.toISOString().slice(0, 10),
   );
+  if (process.env.INGEST_UNTIL) {
+    params.set("conditions[publication_date][lte]", process.env.INGEST_UNTIL);
+  }
   for (const field of [
     "document_number",
     "title",
@@ -186,12 +189,15 @@ export async function fetchFederalRegisterEvents(
       byNumber.set(doc.document_number, { doc, matched: "agency:election" });
     }
   }
-  // Same-day coverage: whatever is on public inspection right now. The
+  // Same-day coverage: whatever is on public inspection right now — a
+  // now-surface, so historical builds (INGEST_UNTIL set) skip it. The
   // document number is identical once it publishes, so the dedupe absorbs
   // the eventual documents.json copy.
-  for (const doc of await fetchPublicInspection()) {
-    if (!byNumber.has(doc.document_number)) {
-      byNumber.set(doc.document_number, { doc, matched: "public-inspection" });
+  if (!process.env.INGEST_UNTIL) {
+    for (const doc of await fetchPublicInspection()) {
+      if (!byNumber.has(doc.document_number)) {
+        byNumber.set(doc.document_number, { doc, matched: "public-inspection" });
+      }
     }
   }
 
