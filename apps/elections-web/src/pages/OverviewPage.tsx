@@ -102,7 +102,8 @@ export function OverviewPage() {
     let rise: { date: string; d: number } | null = null;
     let fall: { date: string; d: number } | null = null;
     for (let i = 1; i < history.length; i++) {
-      const d = history[i]!.overallIndex - history[i - 1]!.overallIndex;
+      const d =
+        history[i]!.highRiskPivotalRaces - history[i - 1]!.highRiskPivotalRaces;
       if (d > 0 && (!rise || d > rise.d)) rise = { date: history[i]!.date, d };
       if (d < 0 && (!fall || d < fall.d)) fall = { date: history[i]!.date, d };
     }
@@ -224,12 +225,16 @@ export function OverviewPage() {
                 Threat to legitimate control over time
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                mean risk index, all 435 races · last {history.length} days
+                races both high-risk (index ≥ 12) and pivotal · the count the
+                threat level is defined on · last {history.length} days
               </Typography>
             </Stack>
             {history.length > 1 ? (
               <TimeSeriesChart
-                points={history.map((p) => ({ date: p.date, value: p.overallIndex }))}
+                points={history.map((p) => ({
+                  date: p.date,
+                  value: p.highRiskPivotalRaces,
+                }))}
                 annotations={annotations}
               />
             ) : (
