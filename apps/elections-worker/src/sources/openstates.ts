@@ -70,7 +70,10 @@ export function billStatus(action: string | null): OperationalStatus {
   return "PROPOSED";
 }
 
-export async function fetchElectionBills(from: Date): Promise<SourceEvent[]> {
+export async function fetchElectionBills(
+  from: Date,
+  maxPagesPerQuery = 1,
+): Promise<SourceEvent[]> {
   const apiKey = process.env.OPENSTATES_API_KEY;
   if (!apiKey) {
     console.log("openstates skipped — OPENSTATES_API_KEY not set");
@@ -79,38 +82,51 @@ export async function fetchElectionBills(from: Date): Promise<SourceEvent[]> {
 
   const byId = new Map<string, { bill: OsBill; matched: string }>();
   for (const term of TERM_QUERIES) {
-    const params = new URLSearchParams({
-      q: term,
-      sort: "updated_desc",
-      updated_since: from.toISOString().slice(0, 10),
-      per_page: "20",
-      page: "1",
-    });
-    const res = await fetch(`${API}?${params}`, {
-      headers: { "X-API-KEY": apiKey },
-    });
-    if (!res.ok) {
-      throw new Error(`openstates: ${res.status} ${res.statusText}`);
+    for (let page = 1; page <= maxPagesPerQuery; page++) {
+      const params = new URLSearchParams({
+        q: term,
+        sort: "updated_desc",
+        updated_since: from.toISOString().slice(0, 10),
+        per_page: "20",
+        page: String(page),
+      });
+      const res = await fetch(`${API}?${params}`, {
+        headers: { "X-API-KEY": apiKey },
+      });
+      if (!res.ok) {
+        throw new Error(`openstates: ${res.status} ${res.statusText}`);
+      }
+      const body = (await res.json()) as {
+        results?: OsBill[];
+        pagination?: { max_page?: number };
+      };
+      for (const bill of body.results ?? []) {
+        if (!byId.has(bill.id)) byId.set(bill.id, { bill, matched: term });
+      }
+      // Free tier allows ~6 requests/minute; stay well under it.
+      await new Promise((resolve) => setTimeout(resolve, 6500));
+      if (page >= (body.pagination?.max_page ?? 1)) break;
     }
-    const body = (await res.json()) as { results?: OsBill[] };
-    for (const bill of body.results ?? []) {
-      if (!byId.has(bill.id)) byId.set(bill.id, { bill, matched: term });
-    }
-    // Free tier is rate-limited; be polite between term queries.
-    await new Promise((resolve) => setTimeout(resolve, 1200));
   }
 
   const events: SourceEvent[] = [];
   for (const { bill, matched } of byId.values()) {
     const state = STATE_BY_NAME[bill.jurisdiction.name];
     if (!state) continue; // municipal/territorial jurisdictions
+    // The phrase queries match full bill text; require an election term in
+    // the title so an unrelated bill quoting election code doesn't land.
+    if (!/voter|voting|ballot|election|absentee|primar(y|ies)|candidate|redistrict/i.test(bill.title)) {
+      continue;
+    }
     const tags = MECHANISM_TAGS.filter(([re]) => re.test(bill.title)).map(
       ([, t]) => t,
     );
     events.push({
       source: "openstates",
       externalId: bill.id,
-      occurredAt: `${bill.first_action_date ?? bill.latest_action_date ?? from.toISOString().slice(0, 10)}T00:00:00Z`,
+      // Action dates arrive as either "YYYY-MM-DD" or a full timestamp;
+      // normalize to the date part.
+      occurredAt: `${(bill.first_action_date ?? bill.latest_action_date ?? from.toISOString()).slice(0, 10)}T00:00:00Z`,
       jurisdictionType: "STATE",
       jurisdictions: [state],
       eventTypes: [...new Set<EventType>(["STATE_DIRECTIVE", ...tags])],

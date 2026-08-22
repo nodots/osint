@@ -167,10 +167,10 @@ async function runScotus(from: Date): Promise<void> {
   }
 }
 
-async function runOpenStates(from: Date): Promise<void> {
+async function runOpenStates(from: Date, mode: string): Promise<void> {
   const runId = await startRun("events:openstates");
   try {
-    const events = await fetchElectionBills(from);
+    const events = await fetchElectionBills(from, mode === "daily" ? 1 : 5);
     const counts = await insertEvents(events);
     // Bills already ingested advance through the §25 lifecycle in place.
     const refreshed = await refreshOperationalStatus(
@@ -245,7 +245,7 @@ async function main() {
     ["courtlistener", () => runCourtListener(from, mode)],
     ["courtlistener_rulings", () => runCourtListenerRulings(from, mode)],
     ["scotus_opinions", () => runScotus(from)],
-    ["openstates", () => runOpenStates(from)],
+    ["openstates", () => runOpenStates(from, mode)],
     // Discovery tier is forward-looking; a backfill would mean 580 × 30MB.
     ...(mode === "daily"
       ? ([["gdelt_gkg", () => runGkgDiscovery(now)]] as const)
