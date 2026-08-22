@@ -129,6 +129,50 @@ describe("event disposition (§17/§26 — the USPS/Talwani fact pattern)", () =
   });
 });
 
+describe("GKG discovery clustering", () => {
+  const row = (themes: string, locations: string, urls: string[]) =>
+    `20260821\t${urls.length}\t\t${themes}\t${locations}\t\t\t\t\t\t${urls.join("<UDIV>")}`;
+  const txLoc = "2#Texas, United States#US#USTX#31#-99#TX";
+
+  it("clusters state-located election coverage by mechanism", async () => {
+    const { clusterGkg } = await import("./sources/gdelt-gkg.js");
+    const csv = [
+      row("ELECTION_FRAUD;", txLoc, [
+        "https://a.com/texas-mail-in-ballot-id-rule",
+        "https://b.com/texas-absentee-rules",
+      ]),
+    ].join("\n");
+    const clusters = [...clusterGkg(csv).values()];
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0]!.state).toBe("TX");
+    expect(clusters[0]!.type).toBe("MAIL_BALLOT_RULE");
+    expect(clusters[0]!.domains.size).toBe(2);
+  });
+
+  it("requires an election term for investigation coverage", async () => {
+    const { clusterGkg } = await import("./sources/gdelt-gkg.js");
+    const csv = row("ELECTION_FRAUD;", txLoc, [
+      "https://a.com/senator-scandal-investigation",
+    ]);
+    expect(clusterGkg(csv).size).toBe(0);
+  });
+
+  it("ignores wire stories spanning many states and non-election themes", async () => {
+    const { clusterGkg } = await import("./sources/gdelt-gkg.js");
+    const manyStates = [
+      "2#Texas, United States#US#USTX#0#0#x",
+      "2#Ohio, United States#US#USOH#0#0#x",
+      "2#Iowa, United States#US#USIA#0#0#x",
+      "2#Maine, United States#US#USME#0#0#x",
+    ].join(";");
+    const csv = [
+      row("ELECTION_FRAUD;", manyStates, ["https://a.com/voter-purge-roundup"]),
+      row("TAX_POLICY;", txLoc, ["https://a.com/voter-purge-story"]),
+    ].join("\n");
+    expect(clusterGkg(csv).size).toBe(0);
+  });
+});
+
 describe("anti-bias invariance (§44 — mirrored hypotheticals)", () => {
   // The derivation takes no party, actor, or ideology input anywhere: the
   // same dimensions and pressure must produce the same score whichever party

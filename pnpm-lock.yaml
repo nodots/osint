@@ -115,6 +115,9 @@ importers:
       '@elections-tracker/shared':
         specifier: workspace:*
         version: link:../../packages/elections-shared
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       nodemailer:
         specifier: ^9.0.5
         version: 9.0.5

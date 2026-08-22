@@ -10,6 +10,7 @@ import { sendDigest } from "./services/digest.js";
 import { finishRun, startRun } from "./services/runs.js";
 import { fetchVotingDockets } from "./sources/courtlistener.js";
 import { fetchVotingRulings } from "./sources/courtlistener-rulings.js";
+import { fetchGkgDiscovery } from "./sources/gdelt-gkg.js";
 import { fetchFederalRegisterEvents } from "./sources/federal-register.js";
 
 // Elections ingest worker. Mirrors the ukraine worker: one audited run per
@@ -116,6 +117,31 @@ async function runCourtListenerRulings(from: Date, mode: string): Promise<void> 
   }
 }
 
+async function runGkgDiscovery(now: Date): Promise<void> {
+  const runId = await startRun("events:gdelt_gkg");
+  try {
+    // Yesterday's daily file is the freshest complete one.
+    const day = new Date(now.getTime() - 86400000);
+    const events = await fetchGkgDiscovery(day);
+    const counts = await insertEvents(events);
+    await finishRun(runId, {
+      status: "success",
+      recordsSeen: counts.seen,
+      recordsInserted: counts.inserted,
+      recordsSkipped: counts.skipped,
+    });
+    console.log(
+      `events[gdelt_gkg] clusters=${counts.seen} inserted=${counts.inserted}`,
+    );
+  } catch (err) {
+    await finishRun(runId, {
+      status: "failure",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
 async function runAssess(now: Date): Promise<void> {
   const runId = await startRun("assess:derived");
   try {
@@ -163,6 +189,10 @@ async function main() {
     ["federal_register", () => runFederalRegister(from)],
     ["courtlistener", () => runCourtListener(from, mode)],
     ["courtlistener_rulings", () => runCourtListenerRulings(from, mode)],
+    // Discovery tier is forward-looking; a backfill would mean 580 × 30MB.
+    ...(mode === "daily"
+      ? ([["gdelt_gkg", () => runGkgDiscovery(now)]] as const)
+      : []),
   ] as const) {
     try {
       await run();
