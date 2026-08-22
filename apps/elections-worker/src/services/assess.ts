@@ -1,7 +1,9 @@
 import {
   ACTIVE_PRESSURE_TYPES,
+  CASE_PRESSURE_WEIGHT,
   CASE_WEIGHT,
   DIMENSION_EVENT_TYPES,
+  blendPressure,
   METHODOLOGY_VERSION,
   NATIONAL_RESISTANCE_WEIGHT,
   NATIONAL_SPILLOVER,
@@ -52,6 +54,8 @@ interface Evidence {
 interface StateAccumulator {
   vuln: Signals;
   resistance: number;
+  // State-local pressure only; national pressure is a single shared signal,
+  // blended in via blendPressure (2026.09.3).
   pressure: number;
   evidence: Map<string, Evidence[]>; // dimension | "resistance" | "pressure"
 }
@@ -149,6 +153,7 @@ export async function runAssessments(now: Date): Promise<{
 
   const raceExtra = new Map<number, StateAccumulator>();
   const stateEventIds = new Map<string, number[]>();
+  let nationalPressure = 0;
 
   for (const event of events.rows) {
     const ageDays = (now.getTime() - event.occurred_at.getTime()) / 86400000;
@@ -164,7 +169,23 @@ export async function runAssessments(now: Date): Promise<{
     const national = event.jurisdictions.includes("US") || states.length === 0;
     const targets = national ? [...allStates] : states;
 
-    const applyTo = (acc: StateAccumulator, scale: number) => {
+    const pressureWeight = types.some((t) => ACTIVE_PRESSURE_TYPES.has(t))
+      ? Math.pow(0.5, Math.max(0, ageDays) / PRESSURE_HALF_LIFE_DAYS)
+      : 0;
+    if (
+      disposition.kind === "vulnerability" &&
+      pressureWeight > 0 &&
+      national
+    ) {
+      // National pressure accumulates once, not once per state.
+      nationalPressure += pressureWeight;
+    }
+
+    const applyTo = (
+      acc: StateAccumulator,
+      scale: number,
+      stateLocal: boolean,
+    ) => {
       if (disposition.kind === "resistance") {
         acc.resistance += disposition.weight * scale;
         addEvidence(acc, "resistance", event.id, disposition.weight * scale);
@@ -177,11 +198,9 @@ export async function runAssessments(now: Date): Promise<{
         acc.vuln[dim] += w;
         addEvidence(acc, dim, event.id, w);
       }
-      if (types.some((t) => ACTIVE_PRESSURE_TYPES.has(t))) {
-        const w =
-          Math.pow(0.5, Math.max(0, ageDays) / PRESSURE_HALF_LIFE_DAYS) * scale;
-        acc.pressure += w;
-        addEvidence(acc, "pressure", event.id, w);
+      if (stateLocal && pressureWeight > 0) {
+        acc.pressure += pressureWeight * scale;
+        addEvidence(acc, "pressure", event.id, pressureWeight * scale);
       }
     };
 
@@ -190,7 +209,7 @@ export async function runAssessments(now: Date): Promise<{
         ? NATIONAL_RESISTANCE_WEIGHT
         : 1;
     for (const state of targets) {
-      applyTo(accFor(state), resistanceScale);
+      applyTo(accFor(state), resistanceScale, !national);
       let ids = stateEventIds.get(state);
       if (!ids) {
         ids = [];
@@ -204,7 +223,7 @@ export async function runAssessments(now: Date): Promise<{
         extra = newAccumulator();
         raceExtra.set(raceId, extra);
       }
-      applyTo(extra, 1);
+      applyTo(extra, 1, true);
     }
   }
 
@@ -213,7 +232,7 @@ export async function runAssessments(now: Date): Promise<{
     const acc = accFor(c.jurisdiction);
     if (c.status === "ACTIVE") {
       acc.vuln.litigationExposure += CASE_WEIGHT;
-      acc.pressure += CASE_WEIGHT;
+      acc.pressure += CASE_PRESSURE_WEIGHT;
     }
     // Terminated cases are neutral: docket metadata alone can't say whether
     // the ending was a dismissal (resistance) or a win for the plaintiff.
@@ -239,7 +258,7 @@ export async function runAssessments(now: Date): Promise<{
         JSON.stringify({
           ...dims,
           institutionalResistance: saturate(acc.resistance),
-          activePressure: saturate(acc.pressure),
+          activePressure: blendPressure(acc.pressure, nationalPressure),
         }),
       ],
     );
@@ -250,6 +269,7 @@ export async function runAssessments(now: Date): Promise<{
     dem + rep === 435 ? nationalTightness(Math.max(dem, rep)) : 0.5;
 
   const latest = await pool.query<{
+    id: number;
     race_id: number;
     process_vulnerability: string;
     competitiveness: string;
@@ -257,10 +277,24 @@ export async function runAssessments(now: Date): Promise<{
     subversion_risk: string;
     institutional_resistance: string | null;
     active_pressure: string | null;
+    federal_leverage: string;
+    state_cooperation: string;
+    administrative_exposure: string;
+    voter_roll_exposure: string;
+    ballot_exposure: string;
+    litigation_exposure: string;
+    certification_exposure: string;
+    recount_exposure: string;
+    congressional_contest_exposure: string;
+    triggering_event_ids: number[];
   }>(
-    `SELECT DISTINCT ON (race_id) race_id, process_vulnerability,
+    `SELECT DISTINCT ON (race_id) id, race_id, process_vulnerability,
             competitiveness, pivotality, subversion_risk,
-            institutional_resistance, active_pressure
+            institutional_resistance, active_pressure,
+            federal_leverage, state_cooperation, administrative_exposure,
+            voter_roll_exposure, ballot_exposure, litigation_exposure,
+            certification_exposure, recount_exposure,
+            congressional_contest_exposure, triggering_event_ids
        FROM race_risk_assessments
       ORDER BY race_id, assessed_at DESC`,
   );
@@ -284,7 +318,12 @@ export async function runAssessments(now: Date): Promise<{
     const resistance = round(
       saturate(stateAcc.resistance + (extra?.resistance ?? 0)),
     );
-    const pressure = round(saturate(stateAcc.pressure + (extra?.pressure ?? 0)));
+    const pressure = round(
+      blendPressure(
+        stateAcc.pressure + (extra?.pressure ?? 0),
+        nationalPressure,
+      ),
+    );
     const rawV = processVulnerability(dims);
     const vulnerability = round(applyResistance(rawV, resistance));
     const competitiveness =
@@ -326,7 +365,7 @@ export async function runAssessments(now: Date): Promise<{
       ...(stateEventIds.get(race.state) ?? []),
     ].slice(0, 50);
 
-    await pool.query(
+    const insertedAssessment = await pool.query(
       `INSERT INTO race_risk_assessments
          (race_id, competitiveness, pivotality, federal_leverage,
           state_cooperation, administrative_exposure, voter_roll_exposure,
@@ -335,7 +374,8 @@ export async function runAssessments(now: Date): Promise<{
           process_vulnerability, institutional_resistance, active_pressure,
           subversion_risk, confidence, explanations, triggering_event_ids,
           methodology_version)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+       RETURNING id`,
       [
         race.id,
         competitiveness,
@@ -372,6 +412,53 @@ export async function runAssessments(now: Date): Promise<{
         }),
         [...new Set(triggering)],
         METHODOLOGY_VERSION,
+      ],
+    );
+
+    // Change ledger row (§23/§38): signed deltas vs the previous assessment
+    // and the events that arrived since. First-ever assessments diff from 0.
+    const assessmentId: number = insertedAssessment.rows[0].id;
+    const prevDims: Partial<Record<keyof VulnerabilityDimensions, number>> = {
+      federalLeverage: Number(prev?.federal_leverage ?? 0),
+      stateCooperation: Number(prev?.state_cooperation ?? 0),
+      administrativeExposure: Number(prev?.administrative_exposure ?? 0),
+      voterRollExposure: Number(prev?.voter_roll_exposure ?? 0),
+      ballotExposure: Number(prev?.ballot_exposure ?? 0),
+      litigationExposure: Number(prev?.litigation_exposure ?? 0),
+      certificationExposure: Number(prev?.certification_exposure ?? 0),
+      recountExposure: Number(prev?.recount_exposure ?? 0),
+      congressionalContestExposure: Number(
+        prev?.congressional_contest_exposure ?? 0,
+      ),
+    };
+    const dimensionDeltas: Record<string, number> = {};
+    for (const d of DIMENSIONS) {
+      const delta = round(dims[d] - (prevDims[d] ?? 0));
+      if (delta !== 0) dimensionDeltas[d] = delta;
+    }
+    const prevTriggering = new Set(prev?.triggering_event_ids ?? []);
+    const newEventIds = [...new Set(triggering)].filter(
+      (id) => !prevTriggering.has(id),
+    );
+    await pool.query(
+      `INSERT INTO assessment_changes
+         (race_id, assessment_id, previous_assessment_id, delta_risk,
+          delta_vulnerability, delta_resistance, delta_pressure,
+          delta_competitiveness, delta_pivotality, dimension_deltas,
+          new_event_ids)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        race.id,
+        assessmentId,
+        prev?.id ?? null,
+        round(risk - Number(prev?.subversion_risk ?? 0)),
+        round(vulnerability - Number(prev?.process_vulnerability ?? 0)),
+        round(resistance - Number(prev?.institutional_resistance ?? 0)),
+        round(pressure - Number(prev?.active_pressure ?? 0)),
+        round(competitiveness - Number(prev?.competitiveness ?? 0)),
+        round(pivotality - Number(prev?.pivotality ?? 0)),
+        JSON.stringify(dimensionDeltas),
+        newEventIds.slice(0, 50),
       ],
     );
     inserted++;

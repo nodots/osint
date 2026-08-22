@@ -25,6 +25,7 @@ interface ClRulingDocket {
   dateFiled: string | null;
   dateTerminated: string | null;
   docket_absolute_url: string;
+  party: string[] | null;
   recap_documents:
     | {
         id: number;
@@ -51,6 +52,24 @@ const MECHANICS_RE =
   /motion (?:for|to) (?:leave|permission|extension|extend|seal|withdraw|substitute)|reply brief|amicus|scheduling|pro hac vice/i;
 
 export type RulingDirection = "BLOCKS" | "DENIES";
+
+// Nationwide-scope detection (2026.09.3): a block reads as national
+// resistance when the order says so, or when the enjoined party is the
+// federal government — a federal defendant's conduct isn't confined to the
+// issuing court's state.
+const NATIONWIDE_RE = /nationwide|universal (?:injunction|relief)|applies? to all states/i;
+const FEDERAL_PARTY_RE =
+  /\bunited states\b|\bu\.s\.\b|donald j\.? trump|homeland security|citizenship and immigration|postal service|social security administration|united states attorney general|election assistance commission|department of justice|department of defense/i;
+
+export function rulingScope(
+  description: string,
+  caseName: string,
+  parties: string[],
+): "US" | "STATE" {
+  if (NATIONWIDE_RE.test(description)) return "US";
+  const partyText = `${caseName} ${parties.join(" ")}`;
+  return FEDERAL_PARTY_RE.test(partyText) ? "US" : "STATE";
+}
 
 export function classifyRuling(description: string): RulingDirection | null {
   const text = description.replace(/\s+/g, " ");
@@ -111,14 +130,21 @@ export async function fetchVotingRulings(
       const types: EventType[] = blocks
         ? ["COURT_RULING", "INJUNCTION"]
         : ["COURT_RULING"];
+      // A block against a federal defendant (or an expressly nationwide
+      // order) is national resistance, wherever the court sits.
+      const national =
+        !state ||
+        (blocks &&
+          rulingScope(doc.description, docket.caseName, docket.party ?? []) ===
+            "US");
       events.push({
         caseKey,
         material: true,
         source: "courtlistener_rulings",
         externalId: `rd:${doc.id}`,
         occurredAt: `${doc.entry_date_filed}T00:00:00Z`,
-        jurisdictionType: state ? "STATE" : "FEDERAL",
-        jurisdictions: state ? [state] : ["US"],
+        jurisdictionType: national ? "FEDERAL" : "STATE",
+        jurisdictions: !national && state ? [state] : ["US"],
         eventTypes: types,
         title: `${blocks ? "Injunctive relief granted" : "Injunctive relief denied"} — ${docket.caseName} (${docket.court})`,
         summary: doc.description.replace(/\s+/g, " ").slice(0, 1000),

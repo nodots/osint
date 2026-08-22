@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node --env-file-if-exists=.env dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "ingest": "tsx --env-file-if-exists=.env src/index.ts"
+    "ingest": "tsx --env-file-if-exists=.env src/index.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@elections-tracker/shared": "workspace:*",
@@ -18,6 +19,7 @@
     "@types/node": "^22.10.5",
     "@types/pg": "^8.11.10",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.11"
   }
 }

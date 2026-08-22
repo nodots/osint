@@ -12,7 +12,10 @@
 // the signals (after the v0.1 methodology spec).
 // 2026.09.2: court rulings ingest with direction — INJUNCTION events are
 // resistance-side (full weight while in force, nothing once dissolved).
-export const METHODOLOGY_VERSION = "2026.09.2";
+// 2026.09.3: nationwide-scope injunction detection; active pressure blends
+// separately saturated state and national signals; cases weigh less into
+// pressure than into litigation exposure.
+export const METHODOLOGY_VERSION = "2026.09.3";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {

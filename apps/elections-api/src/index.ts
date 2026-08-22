@@ -4,6 +4,7 @@ import { districtsRouter } from "./routes/districts.js";
 import { racesRouter } from "./routes/races.js";
 import { eventsRouter } from "./routes/events.js";
 import { houseControlRouter } from "./routes/house-control.js";
+import { changesRouter } from "./routes/changes.js";
 import { adminRouter } from "./routes/admin.js";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use(`${BASE}/districts`, districtsRouter);
 app.use(`${BASE}/races`, racesRouter);
 app.use(`${BASE}/events`, eventsRouter);
 app.use(`${BASE}/house-control`, houseControlRouter);
+app.use(`${BASE}/changes`, changesRouter);
 app.use(`${BASE}/admin`, adminRouter);
 
 // Centralized error handler — keeps route handlers free of try/catch noise.

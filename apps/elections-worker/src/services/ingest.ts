@@ -28,6 +28,59 @@ export interface SourceEvent {
   rawData: Record<string, unknown>;
 }
 
+// Source registry rows (spec §7): every worker source is registered once and
+// each ingested event gets an evidence row pointing back to the fetched
+// document, completing the score → event → evidence → source chain.
+const SOURCE_REGISTRY: Record<
+  string,
+  { name: string; organization: string; url: string; sourceType: string }
+> = {
+  federal_register: {
+    name: "Federal Register",
+    organization: "Office of the Federal Register / GPO",
+    url: "https://www.federalregister.gov",
+    sourceType: "PRIMARY_GOVERNMENT",
+  },
+  courtlistener: {
+    name: "CourtListener RECAP dockets",
+    organization: "Free Law Project",
+    url: "https://www.courtlistener.com",
+    sourceType: "COURT_DOCUMENT",
+  },
+  courtlistener_rulings: {
+    name: "CourtListener RECAP docket entries",
+    organization: "Free Law Project",
+    url: "https://www.courtlistener.com",
+    sourceType: "COURT_DOCUMENT",
+  },
+};
+
+const sourceIdCache = new Map<string, number>();
+
+async function ensureSourceId(source: string): Promise<number | null> {
+  const cached = sourceIdCache.get(source);
+  if (cached !== undefined) return cached;
+  const meta = SOURCE_REGISTRY[source];
+  if (!meta) return null;
+  const existing = await pool.query(
+    `SELECT id FROM sources WHERE name = $1`,
+    [meta.name],
+  );
+  let id: number;
+  if (existing.rows.length > 0) {
+    id = existing.rows[0].id;
+  } else {
+    const inserted = await pool.query(
+      `INSERT INTO sources (name, organization, url, source_type, reliability_baseline)
+       VALUES ($1, $2, $3, $4, 0.9) RETURNING id`,
+      [meta.name, meta.organization, meta.url, meta.sourceType],
+    );
+    id = inserted.rows[0].id;
+  }
+  sourceIdCache.set(source, id);
+  return id;
+}
+
 export async function existingExternalIds(source: string): Promise<Set<string>> {
   const { rows } = await pool.query(
     `SELECT raw_data->>'externalId' AS ext FROM events WHERE raw_data->>'source' = $1`,
@@ -41,16 +94,18 @@ export async function insertEvents(
 ): Promise<{ seen: number; inserted: number; skipped: number }> {
   if (events.length === 0) return { seen: 0, inserted: 0, skipped: 0 };
   const known = await existingExternalIds(events[0]!.source);
+  const sourceId = await ensureSourceId(events[0]!.source);
   let inserted = 0;
   for (const event of events) {
     if (known.has(event.externalId)) continue;
     known.add(event.externalId);
-    await pool.query(
+    const insertedEvent = await pool.query(
       `INSERT INTO events (occurred_at, jurisdiction_type, jurisdictions,
                            event_types, title, summary, factual_status,
                            operational_status, confidence, material,
                            related_case_id, raw_data, entered_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING id`,
       [
         event.occurredAt,
         event.jurisdictionType,
@@ -71,6 +126,13 @@ export async function insertEvents(
         `worker:${event.source}`,
       ],
     );
+    if (sourceId !== null && typeof event.rawData.url === "string") {
+      await pool.query(
+        `INSERT INTO evidence (source_id, event_id, url, title, primary_source)
+         VALUES ($1, $2, $3, $4, true)`,
+        [sourceId, insertedEvent.rows[0].id, event.rawData.url, event.title],
+      );
+    }
     inserted++;
   }
   return {

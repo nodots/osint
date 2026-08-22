@@ -29,6 +29,24 @@ export const NATIONAL_SPILLOVER = 0.2;
 // state's resistance at half weight; a state-level block counts fully there.
 export const NATIONAL_RESISTANCE_WEIGHT = 0.5;
 export const CASE_WEIGHT = 0.3;
+// Cases contribute far less to pressure than to litigation exposure — an
+// active docket is standing exposure, not a fresh exercise of a mechanism.
+export const CASE_PRESSURE_WEIGHT = 0.1;
+// 2026.09.3: active pressure saturates state-local and national activity
+// separately, then blends — a busy federal register must not read as maximal
+// pressure in all fifty states.
+export const PRESSURE_STATE_WEIGHT = 0.6;
+export const PRESSURE_NATIONAL_WEIGHT = 0.4;
+
+export function blendPressure(
+  stateSignal: number,
+  nationalSignal: number,
+): number {
+  return clamp01(
+    PRESSURE_STATE_WEIGHT * saturate(stateSignal) +
+      PRESSURE_NATIONAL_WEIGHT * saturate(nationalSignal),
+  );
+}
 export const RESISTANCE_SUPPRESSION = 0.6; // K_D
 export const PRESSURE_FLOOR = 0.35; // RIR = E·V·(floor + (1−floor)·A)
 export const PROPOSAL_HALF_LIFE_DAYS = 120;

@@ -260,6 +260,40 @@ export const raceRiskAssessments = pgTable(
   ],
 );
 
+// One row per material assessment movement (methodology doc §23/§38): the
+// signed deltas between consecutive assessments plus the events that arrived
+// in between. This is the data spine for the change ledger, the "What
+// changed" page, and the email digest.
+export const assessmentChanges = pgTable(
+  "assessment_changes",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    raceId: integer("race_id")
+      .notNull()
+      .references(() => races.id),
+    assessmentId: integer("assessment_id")
+      .notNull()
+      .references(() => raceRiskAssessments.id),
+    previousAssessmentId: integer("previous_assessment_id").references(
+      () => raceRiskAssessments.id,
+    ),
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    deltaRisk: doublePrecision("delta_risk").notNull(),
+    deltaVulnerability: doublePrecision("delta_vulnerability").notNull(),
+    deltaResistance: doublePrecision("delta_resistance"),
+    deltaPressure: doublePrecision("delta_pressure"),
+    deltaCompetitiveness: doublePrecision("delta_competitiveness").notNull(),
+    deltaPivotality: doublePrecision("delta_pivotality").notNull(),
+    // Per-dimension signed deltas, only dimensions that moved.
+    dimensionDeltas: jsonb("dimension_deltas"),
+    // Events in the new assessment's trigger set that were not in the old one.
+    newEventIds: integer("new_event_ids").array().notNull().default([]),
+  },
+  (table) => [index("idx_changes_time").on(table.changedAt)],
+);
+
 // Statewide conditions that propagate into district assessments (spec §14).
 export const stateProfiles = pgTable("state_profiles", {
   state: text("state").primaryKey(), // "TX"
