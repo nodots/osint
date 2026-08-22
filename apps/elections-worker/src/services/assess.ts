@@ -101,7 +101,12 @@ function dimensionsForEvent(types: string[]): (keyof VulnerabilityDimensions)[] 
   );
 }
 
-export async function runAssessments(now: Date): Promise<{
+export async function runAssessments(
+  now: Date,
+  // True when replaying history: stamps the explanation so retrospective
+  // rows are never mistaken for what the system said live.
+  retrodiction = false,
+): Promise<{
   seen: number;
   inserted: number;
   skipped: number;
@@ -110,10 +115,14 @@ export async function runAssessments(now: Date): Promise<{
 
   const [events, cases, races, projection] = await Promise.all([
     pool.query<EventRow>(
+      // The upper bound makes the pass point-in-time: an as-of date in the
+      // past recomputes that day's assessment (retrodiction — labeled in
+      // explanations; current lifecycle status stands in for the status of
+      // record on that day).
       `SELECT id, occurred_at, jurisdictions, event_types, operational_status,
               affected_race_ids
-         FROM events WHERE occurred_at >= $1 AND material`,
-      [since],
+         FROM events WHERE occurred_at >= $1 AND occurred_at <= $2 AND material`,
+      [since, now],
     ),
     pool.query<{ jurisdiction: string | null; status: string }>(
       `SELECT jurisdiction, status FROM cases`,
@@ -367,14 +376,14 @@ export async function runAssessments(now: Date): Promise<{
 
     const insertedAssessment = await pool.query(
       `INSERT INTO race_risk_assessments
-         (race_id, competitiveness, pivotality, federal_leverage,
+         (assessed_at, race_id, competitiveness, pivotality, federal_leverage,
           state_cooperation, administrative_exposure, voter_roll_exposure,
           ballot_exposure, litigation_exposure, certification_exposure,
           recount_exposure, congressional_contest_exposure,
           process_vulnerability, institutional_resistance, active_pressure,
           subversion_risk, confidence, explanations, triggering_event_ids,
           methodology_version)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+       VALUES ($21,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING id`,
       [
         race.id,
@@ -396,6 +405,7 @@ export async function runAssessments(now: Date): Promise<{
         round(derivedConfidence(totalSignal)),
         JSON.stringify({
           derivation: "event-signal",
+          ...(retrodiction ? { retrodiction: true } : {}),
           state: race.state,
           rawVulnerability: round(rawV),
           electoralExposure: round(exposure),
@@ -412,6 +422,7 @@ export async function runAssessments(now: Date): Promise<{
         }),
         [...new Set(triggering)],
         METHODOLOGY_VERSION,
+        now,
       ],
     );
 
@@ -442,11 +453,11 @@ export async function runAssessments(now: Date): Promise<{
     );
     await pool.query(
       `INSERT INTO assessment_changes
-         (race_id, assessment_id, previous_assessment_id, delta_risk,
-          delta_vulnerability, delta_resistance, delta_pressure,
+         (changed_at, race_id, assessment_id, previous_assessment_id,
+          delta_risk, delta_vulnerability, delta_resistance, delta_pressure,
           delta_competitiveness, delta_pivotality, dimension_deltas,
           new_event_ids)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+       VALUES ($12,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         race.id,
         assessmentId,
@@ -459,6 +470,7 @@ export async function runAssessments(now: Date): Promise<{
         round(pivotality - Number(prev?.pivotality ?? 0)),
         JSON.stringify(dimensionDeltas),
         newEventIds.slice(0, 50),
+        now,
       ],
     );
     inserted++;

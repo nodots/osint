@@ -9,6 +9,7 @@
     "start": "node --env-file-if-exists=.env dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ingest": "tsx --env-file-if-exists=.env src/index.ts",
+    "assess:backfill": "tsx --env-file-if-exists=.env src/backfill-assessments.ts",
     "test": "vitest run"
   },
   "dependencies": {
