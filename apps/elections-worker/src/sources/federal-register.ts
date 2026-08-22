@@ -11,6 +11,10 @@ import type { SourceEvent } from "../services/ingest.js";
 // appears in its title or abstract.
 
 const API = "https://www.federalregister.gov/api/v1/documents.json";
+// Documents on file at the OFR ahead of official publication — this is when
+// the press reports a rule, typically days before publication_date.
+const PUBLIC_INSPECTION_API =
+  "https://www.federalregister.gov/api/v1/public-inspection-documents/current.json";
 
 // Phrase queries run without an agency restriction; the broad "election" term
 // only within election-relevant agencies.
@@ -50,6 +54,23 @@ const TYPE_MAP: Record<string, { types: EventType[]; op: OperationalStatus }> =
     Notice: { types: ["ELECTION_ADMINISTRATION"], op: "ACTIVE" },
     "Presidential Document": { types: ["PUBLIC_DIRECTIVE"], op: "ACTIVE" },
   };
+
+// Content-based mechanism tags so a document also feeds the dimension it
+// actually touches (a USPS mail-ballot rule is ballot exposure, not just
+// federal leverage).
+const MECHANISM_TAGS: [RegExp, EventType][] = [
+  [/ballot.{0,20}mail|mail.{0,20}ballot|absentee|vote by mail/i, "MAIL_BALLOT_RULE"],
+  [/voter registration|voter roll|list maintenance/i, "VOTER_REGISTRATION"],
+  [/citizenship/i, "CITIZENSHIP_VERIFICATION"],
+  [/early voting/i, "EARLY_VOTING_RULE"],
+  [/provisional ballot/i, "PROVISIONAL_BALLOT_RULE"],
+  [/certification/i, "CERTIFICATION"],
+];
+
+function mechanismTags(doc: FrDocument): EventType[] {
+  const haystack = `${doc.title} ${doc.abstract ?? ""}`;
+  return MECHANISM_TAGS.filter(([re]) => re.test(haystack)).map(([, t]) => t);
+}
 
 async function fetchQuery(
   params: URLSearchParams,
@@ -94,8 +115,51 @@ function relevant(doc: FrDocument): boolean {
   const haystack = `${doc.title} ${doc.abstract ?? ""}`.toLowerCase();
   return (
     PHRASE_QUERIES.some((phrase) => haystack.includes(phrase)) ||
-    haystack.includes("election")
+    haystack.includes("election") ||
+    haystack.includes("ballot")
   );
+}
+
+interface PiDocument {
+  document_number: string;
+  title: string;
+  type: string;
+  filed_at: string;
+  publication_date: string;
+  html_url: string;
+  agencies: { name?: string; raw_name?: string }[];
+}
+
+// Public-inspection docs have no abstract, so relevance runs on title +
+// agency names alone; the phrase gate stays the same.
+async function fetchPublicInspection(): Promise<FrDocument[]> {
+  const res = await fetch(PUBLIC_INSPECTION_API);
+  if (!res.ok) {
+    throw new Error(
+      `federal register public inspection: ${res.status} ${res.statusText}`,
+    );
+  }
+  const body = (await res.json()) as { results?: PiDocument[] };
+  return (body.results ?? [])
+    .filter((doc) => {
+      const haystack = `${doc.title} ${doc.agencies
+        .map((a) => a.name ?? a.raw_name)
+        .join(" ")}`.toLowerCase();
+      return (
+        PHRASE_QUERIES.some((phrase) => haystack.includes(phrase)) ||
+        /\belection|\bballot|\bvoter/.test(haystack)
+      );
+    })
+    .map((doc) => ({
+      document_number: doc.document_number,
+      title: doc.title.trim(),
+      type: doc.type,
+      abstract: null,
+      // The filing is the observable occurrence; publication follows later.
+      publication_date: doc.filed_at.slice(0, 10),
+      html_url: doc.html_url,
+      agencies: doc.agencies,
+    }));
 }
 
 export async function fetchFederalRegisterEvents(
@@ -122,6 +186,14 @@ export async function fetchFederalRegisterEvents(
       byNumber.set(doc.document_number, { doc, matched: "agency:election" });
     }
   }
+  // Same-day coverage: whatever is on public inspection right now. The
+  // document number is identical once it publishes, so the dedupe absorbs
+  // the eventual documents.json copy.
+  for (const doc of await fetchPublicInspection()) {
+    if (!byNumber.has(doc.document_number)) {
+      byNumber.set(doc.document_number, { doc, matched: "public-inspection" });
+    }
+  }
 
   const events: SourceEvent[] = [];
   let lowRelevance = 0;
@@ -146,7 +218,7 @@ export async function fetchFederalRegisterEvents(
       occurredAt: `${doc.publication_date}T00:00:00Z`,
       jurisdictionType: "FEDERAL",
       jurisdictions: ["US"],
-      eventTypes: mapping.types,
+      eventTypes: [...new Set([...mapping.types, ...mechanismTags(doc)])],
       title: doc.title.slice(0, 500),
       summary:
         doc.abstract?.slice(0, 2000) ??

@@ -1,6 +1,7 @@
 import { pool } from "./db.js";
 import {
   insertEvents,
+  linkFinalRules,
   refreshOperationalStatus,
   upsertCases,
 } from "./services/ingest.js";
@@ -19,6 +20,7 @@ async function runFederalRegister(from: Date): Promise<void> {
   try {
     const { events, lowRelevance } = await fetchFederalRegisterEvents(from);
     const counts = await insertEvents(events);
+    const linked = await linkFinalRules("federal_register");
     await finishRun(runId, {
       status: "success",
       recordsSeen: counts.seen + lowRelevance,
@@ -27,7 +29,7 @@ async function runFederalRegister(from: Date): Promise<void> {
     });
     console.log(
       `events[federal_register] seen=${counts.seen + lowRelevance} inserted=${counts.inserted} ` +
-        `low-relevance=${lowRelevance}`,
+        `low-relevance=${lowRelevance} rule-links=${linked}`,
     );
   } catch (err) {
     await finishRun(runId, {

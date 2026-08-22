@@ -138,6 +138,37 @@ export async function upsertCases(
   return { seen: cases.length, inserted, skipped: cases.length - inserted, ids };
 }
 
+// Lifecycle link (§25): a published final rule supersedes its proposed rule.
+// Match on normalized title within the same source; the proposal is expired
+// (neutral — its weight moves to the final rule, this is not resistance) and
+// the final rule records what it supersedes.
+export async function linkFinalRules(source: string): Promise<number> {
+  const linked = await pool.query(
+    `UPDATE events final SET
+        supersedes_event_id = proposal.id,
+        parent_event_id = COALESCE(final.parent_event_id, proposal.id)
+       FROM events proposal
+      WHERE final.raw_data->>'source' = $1
+        AND proposal.raw_data->>'source' = $1
+        AND final.supersedes_event_id IS NULL
+        AND final.raw_data->>'documentType' = 'Rule'
+        AND proposal.raw_data->>'documentType' = 'Proposed Rule'
+        AND lower(trim(final.title)) = lower(trim(proposal.title))
+        AND proposal.occurred_at < final.occurred_at
+      RETURNING final.id, proposal.id AS proposal_id`,
+    [source],
+  );
+  for (const row of linked.rows) {
+    await pool.query(
+      `UPDATE events SET operational_status = 'EXPIRED', updated_at = now(),
+              last_modified_by = $2
+        WHERE id = $1 AND operational_status = 'PROPOSED'`,
+      [row.proposal_id, `worker:${source}`],
+    );
+  }
+  return linked.rowCount ?? 0;
+}
+
 // Lifecycle refresh (§25): when a source reports an event's operational
 // status changed (e.g. a docket terminated), update the existing row rather
 // than inserting a duplicate.
