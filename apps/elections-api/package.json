@@ -10,14 +10,17 @@
     "serve": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts"
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "seed:districts": "tsx --env-file-if-exists=.env src/ingest/seed-districts.ts"
   },
   "dependencies": {
     "@elections-tracker/shared": "workspace:*",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.45.2",
     "express": "^4.21.1",
+    "fflate": "^0.8.3",
     "pg": "^8.21.0",
+    "shapefile": "^0.6.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -25,6 +28,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.5",
     "@types/pg": "^8.11.10",
+    "@types/shapefile": "^0.6.4",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
