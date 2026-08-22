@@ -149,6 +149,11 @@ services:
       DIGEST_TO: ${DIGEST_TO:-}
       DIGEST_RISK_DELTA: ${DIGEST_RISK_DELTA:-0.02}
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+      # State legislation source (optional; free key from OpenStates).
+      OPENSTATES_API_KEY: ${OPENSTATES_API_KEY:-}
+      # Path (inside the container) to the MEDSL returns file for the weekly
+      # ratings refresh; mount it via volumes when set.
+      RATINGS_FILE: ${RATINGS_FILE:-}
     # Ingest once on start, then daily at INGEST_TIME_UTC.
     command: sh scripts/elections/worker-loop.sh
 

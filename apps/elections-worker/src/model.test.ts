@@ -173,6 +173,18 @@ describe("GKG discovery clustering", () => {
   });
 });
 
+describe("OpenStates bill lifecycle mapping", () => {
+  it("maps action text to the §25 lifecycle deterministically", async () => {
+    const { billStatus } = await import("./sources/openstates.js");
+    expect(billStatus("Signed by the Governor")).toBe("ACTIVE");
+    expect(billStatus("Became law without signature")).toBe("ACTIVE");
+    expect(billStatus("Vetoed by the Governor")).toBe("EXPIRED");
+    expect(billStatus("Died in committee")).toBe("EXPIRED");
+    expect(billStatus("Referred to Committee on Elections")).toBe("PROPOSED");
+    expect(billStatus(null)).toBe("PROPOSED");
+  });
+});
+
 describe("anti-bias invariance (§44 — mirrored hypotheticals)", () => {
   // The derivation takes no party, actor, or ideology input anywhere: the
   // same dimensions and pressure must produce the same score whichever party

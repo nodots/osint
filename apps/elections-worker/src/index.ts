@@ -11,6 +11,8 @@ import { finishRun, startRun } from "./services/runs.js";
 import { fetchVotingDockets } from "./sources/courtlistener.js";
 import { fetchVotingRulings } from "./sources/courtlistener-rulings.js";
 import { fetchGkgDiscovery } from "./sources/gdelt-gkg.js";
+import { fetchScotusOpinions } from "./sources/scotus.js";
+import { fetchElectionBills } from "./sources/openstates.js";
 import { fetchFederalRegisterEvents } from "./sources/federal-register.js";
 
 // Elections ingest worker. Mirrors the ukraine worker: one audited run per
@@ -142,6 +144,59 @@ async function runGkgDiscovery(now: Date): Promise<void> {
   }
 }
 
+async function runScotus(from: Date): Promise<void> {
+  const runId = await startRun("events:scotus_opinions");
+  try {
+    const events = await fetchScotusOpinions(from);
+    const counts = await insertEvents(events);
+    await finishRun(runId, {
+      status: "success",
+      recordsSeen: counts.seen,
+      recordsInserted: counts.inserted,
+      recordsSkipped: counts.skipped,
+    });
+    console.log(
+      `events[scotus_opinions] seen=${counts.seen} inserted=${counts.inserted}`,
+    );
+  } catch (err) {
+    await finishRun(runId, {
+      status: "failure",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
+async function runOpenStates(from: Date): Promise<void> {
+  const runId = await startRun("events:openstates");
+  try {
+    const events = await fetchElectionBills(from);
+    const counts = await insertEvents(events);
+    // Bills already ingested advance through the §25 lifecycle in place.
+    const refreshed = await refreshOperationalStatus(
+      "openstates",
+      new Map(
+        events.map((e) => [e.externalId, e.operationalStatus as string]),
+      ),
+    );
+    await finishRun(runId, {
+      status: "success",
+      recordsSeen: counts.seen,
+      recordsInserted: counts.inserted,
+      recordsSkipped: counts.skipped,
+    });
+    console.log(
+      `events[openstates] seen=${counts.seen} inserted=${counts.inserted} status-refreshed=${refreshed}`,
+    );
+  } catch (err) {
+    await finishRun(runId, {
+      status: "failure",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
 async function runAssess(now: Date): Promise<void> {
   const runId = await startRun("assess:derived");
   try {
@@ -189,6 +244,8 @@ async function main() {
     ["federal_register", () => runFederalRegister(from)],
     ["courtlistener", () => runCourtListener(from, mode)],
     ["courtlistener_rulings", () => runCourtListenerRulings(from, mode)],
+    ["scotus_opinions", () => runScotus(from)],
+    ["openstates", () => runOpenStates(from)],
     // Discovery tier is forward-looking; a backfill would mean 580 × 30MB.
     ...(mode === "daily"
       ? ([["gdelt_gkg", () => runGkgDiscovery(now)]] as const)
