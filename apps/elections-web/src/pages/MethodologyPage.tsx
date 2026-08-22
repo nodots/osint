@@ -13,6 +13,7 @@ import {
   RATINGS_VERSION,
   RESISTANCE_SUPPRESSION,
   SATURATION_K,
+  THREAT_CALIBRATION,
   VULNERABILITY_WEIGHTS,
 } from "@elections-tracker/shared";
 
@@ -187,9 +188,20 @@ export function MethodologyPage() {
         The race-level index, <strong>intervention relevance</strong> (0–100),
         reads MINIMAL under 20, LOW under 40, MODERATE under 60, HIGH under
         75, VERY HIGH at 75 and above. The aggregate,{" "}
-        <strong>threat to legitimate House control</strong>, is LOW when no
-        high-risk race is pivotal, MODERATE at one or more, HIGH at three or
-        more high-risk pivotal races, and UNKNOWN with no assessed races.
+        <strong>threat to legitimate House control</strong>, is calibrated to
+        the corrected historical baselines: the current count of high-risk
+        pivotal races is placed in the pooled distribution of every
+        baseline cycle-day ({THREAT_CALIBRATION.observations} observations,
+        {" "}{THREAT_CALIBRATION.cycles.join("/")}). LOW is below the
+        historical median ({THREAT_CALIBRATION.p50}), MODERATE is in the
+        upper half of the range, HIGH is above the 90th percentile
+        ({THREAT_CALIBRATION.p90}) — beyond nearly every cycle-day any
+        baseline recorded — and UNKNOWN means no assessed races. The
+        cutpoints regenerate with the baselines, so the scale is a position
+        in observed history, not an invented constant. One asymmetry is
+        inherent: the live count includes the state-legislation source,
+        which baselines cannot see, so the level leans conservative (reads
+        high rather than low).
       </Typography>
       <Typography variant="body1">
         For reproducibility against the raw data: the public term
@@ -207,18 +219,21 @@ export function MethodologyPage() {
         Backtesting
       </Typography>
       <Typography variant="body1">
-        The identical pipeline was replayed against the 2022 and 2024 cycles
+        The identical pipeline was replayed against every cycle 2016–2024
         (that cycle&apos;s districts, candidates, derived ratings, and the
         era&apos;s events from the same sources; 100-day assessment replays
-        ending on each election day). Ordinary cycles read zero high-risk
-        pivotal races essentially the entire run-up — 2022 never left zero,
-        2024 touched three only in its final days. On matched sources at the
-        same distance from election day, 2026 reads four — a state neither
-        baseline reached before its final week — and seventeen with the state
-        legislation source, which has no historical counterpart and is
-        therefore excluded from cross-cycle comparisons. Full tables,
-        source-parity checks, and limitations are published in the
-        repository&apos;s backtest report.
+        ending on each election day, with status resolved as of each replay
+        day). An earlier run of this backtest read all baselines at zero;
+        that was look-ahead bias — replays judged cases by their current
+        status — and was corrected in methodology 2026.09.4. Corrected:
+        2016 and 2018 read zero (blowout-projected majorities zero the
+        pivotality term), while 2020, 2022, and 2024 read 27–103 across
+        their final 100 days. On matched sources at the same distance from
+        election day, 2026 reads level with 2024 — the top of the recent
+        range, not outside it. The state-legislation source has no
+        historical counterpart and is excluded from cross-cycle
+        comparisons. Full tables, the correction history, and limitations
+        are published in the repository&apos;s backtest report.
       </Typography>
 
       <Typography variant="h6" sx={{ fontWeight: 300 }}>

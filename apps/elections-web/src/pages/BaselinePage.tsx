@@ -214,8 +214,9 @@ export function BaselinePage() {
             <BaselineChart live={live} matched={matched} />
             <Typography variant="caption" color="text.secondary">
               the count the threat level is defined on (intervention relevance ≥ 12 and
-              pivotality ≥ 10) · 2016–2024 are 100-day replays ending on their election
-              days; 2026 is the live series so far
+              pivotality ≥ 10; the level is the live count&apos;s percentile in this
+              chart&apos;s pooled history) · 2016–2024 are 100-day replays ending on
+              their election days; 2026 is the live series so far
             </Typography>
           </Paper>
         </Grid>

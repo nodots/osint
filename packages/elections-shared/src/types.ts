@@ -203,6 +203,7 @@ export interface HouseControlSummary {
   competitiveRaces: number;
   highRiskRaces: number;
   highRiskPivotalRaces: number;
+  // Calibrated ordinal level — see threat-calibration.ts.
   controlThreat: "LOW" | "MODERATE" | "HIGH" | "UNKNOWN";
   confidence: ConfidenceLabel;
   methodologyVersion: string;

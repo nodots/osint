@@ -1,4 +1,5 @@
 import {
+  controlThreatLevel,
   METHODOLOGY_VERSION,
   type HouseControlSummary,
   type ThreatHistoryPoint,
@@ -121,13 +122,12 @@ houseControlRouter.get("/", async (_req, res, next) => {
       competitiveRaces: row ? Number(row.competitive) : 0,
       highRiskRaces: row ? Number(row.high_risk) : 0,
       highRiskPivotalRaces: highRiskPivotal,
+      // Calibrated against the corrected historical baselines (§43): the
+      // level is the live count's position in the pooled distribution of
+      // baseline cycle-days, not a fixed count.
       controlThreat: !anyAssessments
         ? "UNKNOWN"
-        : highRiskPivotal >= 3
-          ? "HIGH"
-          : highRiskPivotal >= 1
-            ? "MODERATE"
-            : "LOW",
+        : controlThreatLevel(highRiskPivotal),
       confidence: "LOW",
       methodologyVersion: METHODOLOGY_VERSION,
     };

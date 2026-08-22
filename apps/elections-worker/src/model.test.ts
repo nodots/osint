@@ -168,6 +168,20 @@ describe("injunction scope (nationwide vs issuing-court state)", () => {
   });
 });
 
+describe("threat scale (calibrated to baseline percentiles)", () => {
+  it("maps counts by their position in the pooled baseline distribution", async () => {
+    const { controlThreatLevel, THREAT_CALIBRATION } = await import(
+      "@elections-tracker/shared"
+    );
+    expect(controlThreatLevel(0)).toBe("LOW");
+    expect(controlThreatLevel(THREAT_CALIBRATION.p50 - 1)).toBe("LOW");
+    expect(controlThreatLevel(THREAT_CALIBRATION.p50)).toBe("MODERATE");
+    expect(controlThreatLevel(THREAT_CALIBRATION.p90 - 1)).toBe("MODERATE");
+    expect(controlThreatLevel(THREAT_CALIBRATION.p90)).toBe("HIGH");
+    expect(controlThreatLevel(THREAT_CALIBRATION.max + 50)).toBe("HIGH");
+  });
+});
+
 describe("point-in-time status (§43 — no look-ahead in replays)", () => {
   const aug = new Date("2020-08-22T12:00:00Z");
   it("reads a docket terminated in December as live in August", () => {

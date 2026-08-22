@@ -14,6 +14,7 @@ import type {
   RaceSummary,
   ThreatHistoryPoint,
 } from "@elections-tracker/shared";
+import { THREAT_CALIBRATION } from "@elections-tracker/shared";
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
@@ -159,7 +160,13 @@ export function OverviewPage() {
               <Typography variant="body2" color="text.secondary">
                 {summary.controlThreat === "UNKNOWN"
                   ? "No assessed races yet — no basis for a threat call."
-                  : `Risk that control is determined by improper use of governmental process rather than by voters: ${summary.highRiskPivotalRaces} high-risk pivotal race${summary.highRiskPivotalRaces === 1 ? "" : "s"} against a ${summary.seatsToFlipControl ?? "—"}-seat cushion.`}
+                  : `Risk that control is determined by improper use of governmental process rather than by voters: ${summary.highRiskPivotalRaces} high-risk pivotal race${summary.highRiskPivotalRaces === 1 ? "" : "s"} against a ${summary.seatsToFlipControl ?? "—"}-seat cushion — ${
+                      summary.controlThreat === "HIGH"
+                        ? `above the 90th percentile (${THREAT_CALIBRATION.p90}) of all corrected baseline cycle-days`
+                        : summary.controlThreat === "MODERATE"
+                          ? `in the upper half of the historical baseline range (median ${THREAT_CALIBRATION.p50})`
+                          : `below the historical median cycle-day (${THREAT_CALIBRATION.p50})`
+                    }.`}
               </Typography>
             </Stack>
           </Paper>
