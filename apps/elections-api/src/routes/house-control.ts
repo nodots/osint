@@ -18,6 +18,9 @@ interface ControlRow {
   assessed: string;
   high_risk: string;
   high_risk_pivotal: string;
+  rated: string;
+  dem_seats: string;
+  rep_seats: string;
 }
 
 // GET /api/elections/house-control — the primary dashboard card (spec §11).
@@ -32,7 +35,17 @@ houseControlRouter.get("/", async (_req, res, next) => {
               count(a.subversion_risk) AS assessed,
               count(*) FILTER (WHERE a.subversion_risk >= $1) AS high_risk,
               count(*) FILTER (WHERE a.subversion_risk >= $1
-                               AND a.pivotality >= $2) AS high_risk_pivotal
+                               AND a.pivotality >= $2) AS high_risk_pivotal,
+              count(r.rating) AS rated,
+              -- Baseline projection allocates every rated seat by the sign of
+              -- the blended margin (toss-ups included); a dead-even margin
+              -- falls back to the incumbent party.
+              count(*) FILTER (WHERE r.projected_margin > 0
+                               OR (r.projected_margin = 0 AND r.incumbent_party = 'D'))
+                AS dem_seats,
+              count(*) FILTER (WHERE r.projected_margin < 0
+                               OR (r.projected_margin = 0 AND r.incumbent_party = 'R'))
+                AS rep_seats
          FROM races r
          JOIN elections e ON e.id = r.election_id
          LEFT JOIN LATERAL (
@@ -49,10 +62,18 @@ houseControlRouter.get("/", async (_req, res, next) => {
     // With no assessed races there is no basis for a threat call.
     const anyAssessments = row != null && Number(row.assessed) > 0;
 
+    // A projection is only published once every seat is allocated — a partial
+    // seat count reads as a real margin.
+    const dem = row ? Number(row.dem_seats) : 0;
+    const rep = row ? Number(row.rep_seats) : 0;
+    const fullProjection = dem + rep === 435;
+
     const summary: HouseControlSummary = {
       cycle: row?.cycle ?? 2026,
-      baselineProjection: null,
-      seatsToFlipControl: null,
+      baselineProjection: fullProjection ? { dem, rep } : null,
+      // Seats the projected majority holds beyond 217 — how many flips would
+      // alter control (spec §11).
+      seatsToFlipControl: fullProjection ? Math.max(dem, rep) - 217 : null,
       competitiveRaces: row ? Number(row.competitive) : 0,
       highRiskRaces: row ? Number(row.high_risk) : 0,
       highRiskPivotalRaces: highRiskPivotal,
