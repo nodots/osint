@@ -23,17 +23,21 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.get("/api/health", (_req, res) => {
+// Vertical prefix: the platform gateway routes /api/ukraine/* here with the
+// path preserved, so the prefix is part of every mount.
+const BASE = "/api/ukraine";
+
+app.get(`${BASE}/health`, (_req, res) => {
   res.json({ ok: true, service: "ukraine-conflict-tracker-api" });
 });
 
-app.use("/api/events", eventsRouter);
-app.use("/api/control", controlRouter);
-app.use("/api/frontline", frontlineRouter);
-app.use("/api/timeline", timelineRouter);
-app.use("/api/stats", statsRouter);
-app.use("/api/thermal", thermalRouter);
-app.use("/api/admin", adminRouter);
+app.use(`${BASE}/events`, eventsRouter);
+app.use(`${BASE}/control`, controlRouter);
+app.use(`${BASE}/frontline`, frontlineRouter);
+app.use(`${BASE}/timeline`, timelineRouter);
+app.use(`${BASE}/stats`, statsRouter);
+app.use(`${BASE}/thermal`, thermalRouter);
+app.use(`${BASE}/admin`, adminRouter);
 
 // Centralized error handler — keeps route handlers free of try/catch noise.
 app.use(

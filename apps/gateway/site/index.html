@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nodots OSINT</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    main { max-width: 40rem; padding: 2rem; }
+    h1 { font-weight: 300; letter-spacing: 0.02em; margin-bottom: 0.25rem; }
+    p.tagline { color: #8b949e; margin-top: 0; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 1rem 0; }
+    a {
+      display: block;
+      padding: 1rem 1.25rem;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      text-decoration: none;
+      transition: border-color 0.15s ease;
+    }
+    a:hover { border-color: #58a6ff; }
+    a .name { font-size: 1.1rem; }
+    a .desc { color: #8b949e; font-size: 0.9rem; margin-top: 0.25rem; }
+    .soon { opacity: 0.45; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Nodots OSINT</h1>
+    <p class="tagline">Evidence-backed open-source intelligence trackers.</p>
+    <ul>
+      <li>
+        <a href="/ukraine/">
+          <div class="name">Ukraine Conflict Tracker</div>
+          <div class="desc">Strikes, frontline movement, and thermal anomalies over time.</div>
+        </a>
+      </li>
+      <li>
+        <a href="/elections/">
+          <div class="name">Election Integrity Monitor</div>
+          <div class="desc">Election-process risk for control of the 2026 U.S. House.</div>
+        </a>
+      </li>
+      <li>
+        <a class="soon" href="/naval/">
+          <div class="name">Naval Vessel Tracker</div>
+          <div class="desc">Coming soon.</div>
+        </a>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>

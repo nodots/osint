@@ -1,3 +1,5 @@
+# Platform gateway for osint.nodots.com — path-based routing to each vertical.
+#
 # SITE_ADDRESS is set by docker-compose from PUBLIC_DOMAIN, defaulting to :80
 # when no domain is configured (a real domain enables automatic HTTPS). The
 # default is resolved in compose because Caddy's {$VAR:default} only applies when
@@ -5,12 +7,31 @@
 {$SITE_ADDRESS} {
 	encode gzip
 
-	# API → api container (path is preserved: /api/... → api:6732/api/...)
-	handle /api/* {
-		reverse_proxy api:6732
+	# APIs — path is preserved: /api/ukraine/... → ukraine-api:6732/api/ukraine/...
+	handle /api/ukraine/* {
+		reverse_proxy ukraine-api:6732
+	}
+	handle /api/elections/* {
+		reverse_proxy elections-api:6752
 	}
 
-	# Static SPA with client-side routing fallback.
+	# Ukraine SPA (built with Vite base /ukraine/, so asset URLs are absolute).
+	@ukraine path /ukraine /ukraine/*
+	handle @ukraine {
+		root * /srv
+		try_files {path} /ukraine/index.html
+		file_server
+	}
+
+	# Elections SPA (Vite base /elections/).
+	@elections path /elections /elections/*
+	handle @elections {
+		root * /srv
+		try_files {path} /elections/index.html
+		file_server
+	}
+
+	# Landing page linking the verticals.
 	handle {
 		root * /srv
 		try_files {path} /index.html

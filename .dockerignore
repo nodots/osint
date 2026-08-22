@@ -8,5 +8,5 @@
 **/.env.*.local
 *.log
 .claude
-docs/acled-access-request.md
+docs/ukraine/acled-access-request.md
 .vite

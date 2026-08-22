@@ -1,12 +1,19 @@
-# Single-VPS deployment: PostGIS + API + ingestion worker + Caddy (web/TLS).
+# Single-VPS deployment of the OSINT platform: one PostGIS instance, one API +
+# worker per vertical, and one Caddy gateway serving every SPA with path routing
+# (osint.nodots.com/ukraine, /elections) plus TLS.
 # Copy deploy.env.example to .env and fill it in, then: docker compose up -d
 #
-# One-time historical backfill (after the stack is up):
+# NOTE for stacks upgraded from the standalone ukraine tracker: the elections
+# database is created by scripts/pg-init/ only on FIRST init of the pgdata
+# volume. On an existing volume create it once by hand:
+#   docker compose exec db createdb -U "$DB_USER" elections_tracker
+#
+# One-time ukraine historical backfill (after the stack is up):
 #   docker compose run --rm -e INGEST_MODE=backfill -e BACKFILL_MONTHS=6 \
-#     worker pnpm --filter @ukraine-tracker/worker ingest
+#     ukraine-worker pnpm --filter @ukraine-tracker/worker ingest
 # Occasional UCDP refresh (monthly cadence upstream):
 #   docker compose run --rm -e EVENT_SOURCE=ucdp \
-#     worker pnpm --filter @ukraine-tracker/worker ingest
+#     ukraine-worker pnpm --filter @ukraine-tracker/worker ingest
 
 services:
   db:
@@ -16,60 +23,65 @@ services:
     image: imresamu/postgis:17-3.5
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-ukraine}
+      POSTGRES_USER: ${DB_USER:-osint}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
-      POSTGRES_DB: ${DB_NAME:-ukraine_tracker}
-      # The app sets UTC per-connection; keep the server UTC too for consistency.
+      # Primary database; additional per-vertical databases are created by the
+      # init scripts below on first volume init.
+      POSTGRES_DB: ${UKRAINE_DB_NAME:-ukraine_tracker}
+      ELECTIONS_DB_NAME: ${ELECTIONS_DB_NAME:-elections_tracker}
+      # The apps set UTC per-connection; keep the server UTC too for consistency.
       TZ: UTC
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./scripts/pg-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ukraine} -d ${DB_NAME:-ukraine_tracker}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-osint} -d ${UKRAINE_DB_NAME:-ukraine_tracker}"]
       interval: 10s
       timeout: 5s
       retries: 10
 
-  # One-shot schema migration. api and worker wait for this to finish so neither
-  # touches the DB before the tables exist (fixes a first-boot/reboot race).
-  migrate:
+  # One-shot schema migrations. Each vertical's api/worker waits for its own
+  # migrate service so nothing touches the DB before the tables exist (fixes a
+  # first-boot/reboot race).
+  ukraine-migrate:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.app
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-ukraine}:${DB_PASSWORD}@db:5432/${DB_NAME:-ukraine_tracker}
+      DATABASE_URL: postgresql://${DB_USER:-osint}:${DB_PASSWORD}@db:5432/${UKRAINE_DB_NAME:-ukraine_tracker}
     restart: "no"
     command: pnpm --filter @ukraine-tracker/api db:migrate
 
-  api:
+  ukraine-api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.app
     restart: unless-stopped
     depends_on:
-      migrate:
+      ukraine-migrate:
         condition: service_completed_successfully
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-ukraine}:${DB_PASSWORD}@db:5432/${DB_NAME:-ukraine_tracker}
+      DATABASE_URL: postgresql://${DB_USER:-osint}:${DB_PASSWORD}@db:5432/${UKRAINE_DB_NAME:-ukraine_tracker}
       PORT: "6732"
-      # Same-origin via Caddy, so CORS is moot; set it to the public origin anyway.
+      # Same-origin via the gateway, so CORS is moot; set the public origin anyway.
       CORS_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost}
     expose:
       - "6732"
     command: pnpm --filter @ukraine-tracker/api serve
 
-  worker:
+  ukraine-worker:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.app
     restart: unless-stopped
     depends_on:
-      migrate:
+      ukraine-migrate:
         condition: service_completed_successfully
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-ukraine}:${DB_PASSWORD}@db:5432/${DB_NAME:-ukraine_tracker}
+      DATABASE_URL: postgresql://${DB_USER:-osint}:${DB_PASSWORD}@db:5432/${UKRAINE_DB_NAME:-ukraine_tracker}
       INGEST_MODE: daily
       # Comma-separated list — ingest GDELT strikes and WarSpotting equipment
       # losses each cycle. Control + thermal still run once per invocation.
@@ -85,15 +97,44 @@ services:
       INGEST_TIME_UTC: ${INGEST_TIME_UTC:-07:30}
       NODE_OPTIONS: --max-old-space-size=2048
     # Ingest once on start, then daily at INGEST_TIME_UTC (see script header).
-    command: sh scripts/worker-loop.sh
+    command: sh scripts/ukraine/worker-loop.sh
 
-  web:
+  elections-migrate:
     build:
       context: .
-      dockerfile: Dockerfile.web
+      dockerfile: Dockerfile.app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-osint}:${DB_PASSWORD}@db:5432/${ELECTIONS_DB_NAME:-elections_tracker}
+    restart: "no"
+    command: pnpm --filter @elections-tracker/api db:migrate
+
+  elections-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
     restart: unless-stopped
     depends_on:
-      - api
+      elections-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-osint}:${DB_PASSWORD}@db:5432/${ELECTIONS_DB_NAME:-elections_tracker}
+      PORT: "6752"
+      CORS_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost}
+    expose:
+      - "6752"
+    command: pnpm --filter @elections-tracker/api serve
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    restart: unless-stopped
+    depends_on:
+      - ukraine-api
+      - elections-api
     environment:
       # PUBLIC_DOMAIN -> the Caddy site address; blank/unset falls back to :80
       # (plain HTTP). A real domain makes Caddy auto-provision HTTPS.

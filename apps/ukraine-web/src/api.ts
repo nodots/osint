@@ -8,7 +8,7 @@ import type {
 } from "@ukraine-tracker/shared";
 
 const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:6732/api";
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:6732/api/ukraine";
 
 export class ApiError extends Error {}
 
