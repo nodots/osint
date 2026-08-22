@@ -1,0 +1,163 @@
+import { pool } from "./db.js";
+import { ingestControl, ingestEvents, ingestThermal } from "./services/ingest.js";
+import { finishRun, startRun } from "./services/runs.js";
+import { FirmsThermalSource } from "./sources/firms.js";
+import { AcledEventSource } from "./sources/acled.js";
+import { DeepStateControlSource } from "./sources/deepstate.js";
+import { DeepStateGithubControlSource } from "./sources/deepstate-github.js";
+import { GdeltEventSource } from "./sources/gdelt.js";
+import { MockControlSource, MockEventSource } from "./sources/mock.js";
+import { UcdpEventSource } from "./sources/ucdp.js";
+import { WarSpottingEventSource } from "./sources/warspotting.js";
+import type { ControlSource, EventSource } from "./sources/types.js";
+
+// EVENT_SOURCE may name one source or a comma-separated list (e.g.
+// "gdelt,warspotting") to ingest several layers in a single run. Control and
+// thermal still run once per invocation regardless.
+function eventSourceNames(): string[] {
+  return (process.env.EVENT_SOURCE ?? "mock")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function buildEventSource(which: string): EventSource {
+  if (which === "gdelt") return new GdeltEventSource();
+  if (which === "ucdp") return new UcdpEventSource();
+  if (which === "warspotting") return new WarSpottingEventSource();
+  if (which === "acled") {
+    const email = process.env.ACLED_EMAIL;
+    const password = process.env.ACLED_PASSWORD;
+    if (!email || !password) {
+      throw new Error(
+        "ACLED_EMAIL and ACLED_PASSWORD are required for EVENT_SOURCE=acled",
+      );
+    }
+    return new AcledEventSource(email, password);
+  }
+  return new MockEventSource();
+}
+
+function buildControlSource(): ControlSource {
+  const which = process.env.CONTROL_SOURCE ?? "mock";
+  if (which === "deepstate-github") return new DeepStateGithubControlSource();
+  if (which === "deepstate") return new DeepStateControlSource();
+  return new MockControlSource();
+}
+
+async function runEvents(from: Date, to: Date): Promise<void> {
+  // Run each configured source independently so one source failing (e.g. an
+  // upstream outage) doesn't skip the others; surface a combined error at the
+  // end so the exit code still reflects any failure.
+  const failures: string[] = [];
+  for (const which of eventSourceNames()) {
+    const source = buildEventSource(which);
+    const runId = await startRun(`events:${source.name}`);
+    try {
+      const events = await source.fetchEvents(from, to);
+      const counts = await ingestEvents(events);
+      await finishRun(runId, {
+        status: "success",
+        recordsSeen: counts.seen,
+        recordsInserted: counts.inserted,
+        recordsSkipped: counts.skipped,
+      });
+      console.log(
+        `events[${source.name}] seen=${counts.seen} inserted=${counts.inserted} skipped=${counts.skipped}`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await finishRun(runId, { status: "failure", message });
+      console.error(`events[${source.name}] failed: ${message}`);
+      failures.push(source.name);
+    }
+  }
+  if (failures.length > 0) {
+    throw new Error(`event ingest failed for: ${failures.join(", ")}`);
+  }
+}
+
+async function runControl(from: Date, to: Date): Promise<void> {
+  const source = buildControlSource();
+  const runId = await startRun(`control:${source.name}`);
+  try {
+    const dates = await source.availableDates(from, to);
+    let seen = 0;
+    let inserted = 0;
+    for (const date of dates) {
+      const areas = await source.fetchControl(date);
+      if (areas.length === 0) continue;
+      const counts = await ingestControl(date, areas, source.name);
+      seen += counts.seen;
+      inserted += counts.inserted;
+    }
+    await finishRun(runId, {
+      status: "success",
+      recordsSeen: seen,
+      recordsInserted: inserted,
+    });
+    console.log(`control[${source.name}] dates=${dates.length} seen=${seen} inserted=${inserted}`);
+  } catch (err) {
+    await finishRun(runId, {
+      status: "failure",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
+// FIRMS thermal is windowed independently: NRT only covers ~the last 2 months,
+// and it's a recent corroborating layer rather than a 6-month backfill. Opt-in
+// via FIRMS_MAP_KEY; window controlled by FIRMS_DAYS (default 14).
+async function runThermal(now: Date): Promise<void> {
+  const key = process.env.FIRMS_MAP_KEY;
+  if (!key) {
+    console.log("thermal[firms] skipped — FIRMS_MAP_KEY not set");
+    return;
+  }
+  const days = Number(process.env.FIRMS_DAYS ?? 14);
+  const from = new Date(now.getTime() - days * 86400000);
+  const source = new FirmsThermalSource(key);
+  const runId = await startRun(`thermal:${source.name}`);
+  try {
+    const rows = await source.fetchThermal(from, now);
+    const counts = await ingestThermal(rows);
+    await finishRun(runId, {
+      status: "success",
+      recordsSeen: counts.seen,
+      recordsInserted: counts.inserted,
+      recordsSkipped: counts.skipped,
+    });
+    console.log(`thermal[firms] seen=${counts.seen} inserted=${counts.inserted}`);
+  } catch (err) {
+    await finishRun(runId, {
+      status: "failure",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
+async function main() {
+  const mode = process.env.INGEST_MODE ?? "backfill";
+  const months = Number(process.env.BACKFILL_MONTHS ?? 6);
+  const now = new Date();
+  const from =
+    mode === "daily"
+      ? new Date(now.getTime() - 2 * 86400000) // last 2 days
+      : new Date(new Date().setMonth(now.getMonth() - months));
+
+  console.log(`ingest mode=${mode} from=${from.toISOString().slice(0, 10)} to=${now.toISOString().slice(0, 10)}`);
+
+  await runControl(from, now);
+  await runEvents(from, now);
+  await runThermal(now);
+
+  await pool.end();
+  console.log("ingest complete.");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

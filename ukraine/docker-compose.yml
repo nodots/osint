@@ -1,0 +1,111 @@
+# Single-VPS deployment: PostGIS + API + ingestion worker + Caddy (web/TLS).
+# Copy deploy.env.example to .env and fill it in, then: docker compose up -d
+#
+# One-time historical backfill (after the stack is up):
+#   docker compose run --rm -e INGEST_MODE=backfill -e BACKFILL_MONTHS=6 \
+#     worker pnpm --filter @ukraine-tracker/worker ingest
+# Occasional UCDP refresh (monthly cadence upstream):
+#   docker compose run --rm -e EVENT_SOURCE=ucdp \
+#     worker pnpm --filter @ukraine-tracker/worker ingest
+
+services:
+  db:
+    # Multi-arch (amd64 + arm64) PostGIS — a faithful build of postgis/postgis,
+    # so the stack runs on any VPS architecture. (Official postgis/postgis is
+    # amd64-only for this tag.)
+    image: imresamu/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-ukraine}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:-ukraine_tracker}
+      # The app sets UTC per-connection; keep the server UTC too for consistency.
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ukraine} -d ${DB_NAME:-ukraine_tracker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # One-shot schema migration. api and worker wait for this to finish so neither
+  # touches the DB before the tables exist (fixes a first-boot/reboot race).
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-ukraine}:${DB_PASSWORD}@db:5432/${DB_NAME:-ukraine_tracker}
+    restart: "no"
+    command: pnpm --filter @ukraine-tracker/api db:migrate
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-ukraine}:${DB_PASSWORD}@db:5432/${DB_NAME:-ukraine_tracker}
+      PORT: "6732"
+      # Same-origin via Caddy, so CORS is moot; set it to the public origin anyway.
+      CORS_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost}
+    expose:
+      - "6732"
+    command: pnpm --filter @ukraine-tracker/api serve
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-ukraine}:${DB_PASSWORD}@db:5432/${DB_NAME:-ukraine_tracker}
+      INGEST_MODE: daily
+      # Comma-separated list — ingest GDELT strikes and WarSpotting equipment
+      # losses each cycle. Control + thermal still run once per invocation.
+      EVENT_SOURCE: gdelt,warspotting
+      CONTROL_SOURCE: deepstate-github
+      FIRMS_MAP_KEY: ${FIRMS_MAP_KEY:-}
+      FIRMS_DAYS: "14"
+      # Not in the daily EVENT_SOURCE above; passed through so the occasional
+      # one-shot UCDP refresh (see header) inherits the token.
+      UCDP_API_TOKEN: ${UCDP_API_TOKEN:-}
+      # Fixed UTC wall-clock time for the daily run, anchored after GDELT's
+      # ~06:00 UTC publish so each run captures the day that just ended.
+      INGEST_TIME_UTC: ${INGEST_TIME_UTC:-07:30}
+      NODE_OPTIONS: --max-old-space-size=2048
+    # Ingest once on start, then daily at INGEST_TIME_UTC (see script header).
+    command: sh scripts/worker-loop.sh
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # PUBLIC_DOMAIN -> the Caddy site address; blank/unset falls back to :80
+      # (plain HTTP). A real domain makes Caddy auto-provision HTTPS.
+      SITE_ADDRESS: ${PUBLIC_DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
