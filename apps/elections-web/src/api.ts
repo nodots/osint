@@ -32,6 +32,24 @@ export function fetchRaces(signal?: AbortSignal) {
   return request<RaceSummary[]>("/races", signal);
 }
 
+export interface DistrictFeatureProperties {
+  id: string;
+  displayName: string;
+  state: string;
+  districtNumber: number;
+  currentMember: string | null;
+  incumbentParty: string | null;
+  raceId: number | null;
+  rating: string | null;
+  projectedMargin: number | null;
+  democraticCandidate: string | null;
+  republicanCandidate: string | null;
+}
+
+export function fetchDistrictsGeoJSON(signal?: AbortSignal) {
+  return request<GeoJSON.FeatureCollection>("/districts/geojson", signal);
+}
+
 export function fetchEvents(signal?: AbortSignal) {
   return request<ElectionEventSummary[]>("/events", signal);
 }

@@ -6,12 +6,14 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { EventsPage } from "./pages/EventsPage.js";
+import { MapPage } from "./pages/MapPage.js";
 import { MethodologyPage } from "./pages/MethodologyPage.js";
 import { OverviewPage } from "./pages/OverviewPage.js";
 import { RacesPage } from "./pages/RacesPage.js";
 
 const NAV = [
   { label: "Overview", path: "/overview" },
+  { label: "Map", path: "/map" },
   { label: "Races", path: "/races" },
   { label: "Events", path: "/events" },
   { label: "Methodology", path: "/methodology" },
@@ -47,6 +49,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={<OverviewPage />} />
+          <Route path="/map" element={<MapPage />} />
           <Route path="/races" element={<RacesPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/methodology" element={<MethodologyPage />} />
