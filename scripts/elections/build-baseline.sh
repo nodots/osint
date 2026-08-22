@@ -12,11 +12,29 @@
 # via RATINGS_FILE (the on-disk 1976-2024 file covers every cycle).
 set -euo pipefail
 
-CYCLE="${1:?usage: build-baseline.sh <2022|2024>}"
+CYCLE="${1:?usage: build-baseline.sh <2016|2018|2020|2022|2024>}"
 PGURL="${PGURL:?set PGURL, e.g. postgresql://osint:osint@127.0.0.1:6432}"
 RATINGS_FILE="${RATINGS_FILE:?set RATINGS_FILE to the MEDSL house returns file}"
 
 case "$CYCLE" in
+  2016)
+    ELECTION_DATE="2016-11-08"
+    RATING_YEARS="2014,2012"
+    CENSUS_CD_ZIP_URL="https://www2.census.gov/geo/tiger/GENZ2016/shp/cb_2016_us_cd115_500k.zip"
+    INGEST_FROM="2015-01-20"
+    ;;
+  2018)
+    ELECTION_DATE="2018-11-06"
+    RATING_YEARS="2016,2014"
+    CENSUS_CD_ZIP_URL="https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_cd116_500k.zip"
+    INGEST_FROM="2017-01-20"
+    ;;
+  2020)
+    ELECTION_DATE="2020-11-03"
+    RATING_YEARS="2018,2016"
+    CENSUS_CD_ZIP_URL="https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_cd116_500k.zip"
+    INGEST_FROM="2019-01-20"
+    ;;
   2022)
     ELECTION_DATE="2022-11-08"
     RATING_YEARS="2020,2018"

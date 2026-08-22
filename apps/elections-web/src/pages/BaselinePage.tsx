@@ -42,10 +42,13 @@ function BaselineChart({
   const plotBottom = 240;
   const plotH = plotBottom - padTop;
   const maxDte = 105;
-  const s2022 = baselines.cycles["2022"].series as Pt[];
-  const s2024 = baselines.cycles["2024"].series as Pt[];
+  const historical = Object.entries(baselines.cycles) as [string, { series: Pt[] }][];
   const maxY =
-    Math.max(10, ...live.map((p) => p.hrp), ...s2024.map((p) => p.hrp)) + 3;
+    Math.max(
+      10,
+      ...live.map((p) => p.hrp),
+      ...historical.flatMap(([, c]) => c.series.map((p) => p.hrp)),
+    ) + 3;
 
   const x = (dte: number) => padLeft + ((maxDte - dte) / maxDte) * plotW;
   const y = (v: number) => plotBottom - (v / maxY) * plotH;
@@ -70,8 +73,15 @@ function BaselineChart({
             <text x={padLeft - 8} y={y(v) + 4} fill="rgba(255,255,255,0.45)" fontSize={11} textAnchor="end">{v}</text>
           </g>
         ))}
-        <path d={path(s2022)} fill="none" stroke={C2022} strokeWidth={2} />
-        <path d={path(s2024)} fill="none" stroke={C2024} strokeWidth={2} />
+        {historical.map(([cycle, c]) => (
+          <path
+            key={cycle}
+            d={path(c.series)}
+            fill="none"
+            stroke={cycle === "2024" ? C2024 : C2022}
+            strokeWidth={2}
+          />
+        ))}
         <path d={path(live)} fill="none" stroke={C2026} strokeWidth={2.5} />
         {last && (
           <g>
@@ -92,7 +102,7 @@ function BaselineChart({
           </g>
         )}
         <text x={x(80)} y={y(0) - 12} fill="rgba(255,255,255,0.55)" fontSize={12}>
-          2022 · zero the entire 100 days
+          2016–2022 · zero the entire 100 days, four cycles running
         </text>
         <text x={x(22)} y={y(3) - 10} fill={C2024} fontSize={12}>
           2024 · 3, final 48 hours only
@@ -100,13 +110,13 @@ function BaselineChart({
         <text x={padLeft} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11}>105 days out</text>
         <text x={x(50)} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11} textAnchor="middle">50 days out</text>
         <text x={padLeft + plotW} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11} textAnchor="end">election day</text>
-        <g transform={`translate(${padLeft + plotW - 290},${padTop - 12})`}>
+        <g transform={`translate(${padLeft + plotW - 340},${padTop - 12})`}>
           <line x1={0} y1={0} x2={22} y2={0} stroke={C2022} strokeWidth={2} />
-          <text x={28} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2022</text>
-          <line x1={70} y1={0} x2={92} y2={0} stroke={C2024} strokeWidth={2} />
-          <text x={98} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2024</text>
-          <line x1={140} y1={0} x2={162} y2={0} stroke={C2026} strokeWidth={2.5} />
-          <text x={168} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2026</text>
+          <text x={28} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2016–2022</text>
+          <line x1={100} y1={0} x2={122} y2={0} stroke={C2024} strokeWidth={2} />
+          <text x={128} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2024</text>
+          <line x1={170} y1={0} x2={192} y2={0} stroke={C2026} strokeWidth={2.5} />
+          <text x={198} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2026</text>
         </g>
       </svg>
     </Box>
@@ -181,7 +191,7 @@ export function BaselinePage() {
     <Box sx={{ maxWidth: 1400 }}>
       <PageHeader
         title="Is 2026 normal? The backtest"
-        meta={`identical pipeline replayed against 2022 and 2024 · baselines generated ${baselines.generatedAt} · methodology ${baselines.methodologyVersion} · indices are ordinal, not probabilities`}
+        meta={`identical pipeline replayed against every cycle 2016–2024 · baselines generated ${baselines.generatedAt} · methodology ${baselines.methodologyVersion} · indices are ordinal, not probabilities`}
       />
 
       <Grid container spacing={2.5}>
@@ -207,15 +217,18 @@ export function BaselinePage() {
                   The finding
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.55 }}>
-                  Run against ordinary cycles, this model stays quiet. At the same
-                  distance from election day, on identical sources, no prior cycle had
-                  reached the state 2026 is in now.
+                  Run against five cycles, quiet and turbulent alike, this model
+                  stays at zero. At the same distance from election day, on
+                  identical sources, no prior cycle had reached the state 2026 is
+                  in now.
                 </Typography>
-                <Stack direction="row" spacing={3}>
-                  <Stack>
-                    <Typography variant="h4" sx={{ fontWeight: 300, color: C2022 }}>0</Typography>
-                    <Typography variant="caption" color="text.secondary">2022</Typography>
-                  </Stack>
+                <Stack direction="row" spacing={2.5} flexWrap="wrap" useFlexGap>
+                  {(["2016", "2018", "2020", "2022"] as const).map((c) => (
+                    <Stack key={c}>
+                      <Typography variant="h4" sx={{ fontWeight: 300, color: C2022 }}>0</Typography>
+                      <Typography variant="caption" color="text.secondary">{c}</Typography>
+                    </Stack>
+                  ))}
                   <Stack>
                     <Typography variant="h4" sx={{ fontWeight: 300, color: C2024 }}>0</Typography>
                     <Typography variant="caption" color="text.secondary">2024</Typography>
@@ -242,11 +255,12 @@ export function BaselinePage() {
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.55 }}>
                 Past cycles produced{" "}
                 <Box component="span" sx={{ color: "text.primary" }}>more</Box>{" "}
-                voting litigation in absolute terms —{" "}
-                {baselines.cycles["2022"].volumes.dockets} dockets and{" "}
-                {baselines.cycles["2022"].volumes.blockingInjunctions} blocking
-                injunctions in 2022. The 2026 elevation is compositional, not source
-                growth.
+                voting litigation in absolute terms — 2020 alone had{" "}
+                {baselines.cycles["2020"].volumes.dockets} dockets and{" "}
+                {baselines.cycles["2020"].volumes.blockingInjunctions} blocking
+                injunctions, and still read zero: record activity met record
+                judicial resistance, and the model scored the courts holding. The
+                2026 elevation is compositional, not source growth.
               </Typography>
             </Paper>
           </Stack>
@@ -290,7 +304,10 @@ export function BaselinePage() {
               methodology from event occurrence dates, with current case status
               standing in for the status of record. State legislation cannot be
               replayed and is excluded from comparisons. State-court and county
-              incidents are under-covered in every cycle.
+              incidents are under-covered in every cycle, RECAP&apos;s coverage
+              thins before ~2018, and the injunction-as-resistance reading is
+              direction-blind — in 2020 courts blocked both restrictions and
+              expansions, and the model counts both as resistance.
             </Typography>
             <Stack spacing={0.5} sx={{ mt: 1.5 }}>
               <Link component={RouterLink} to="/methodology" variant="body2">

@@ -95,18 +95,28 @@ async function sensitivity(): Promise<number | null> {
   }
 }
 
+const CYCLE_DAYS: Record<string, string> = {
+  "2016": "2016-11-08",
+  "2018": "2018-11-06",
+  "2020": "2020-11-03",
+  "2022": "2022-11-08",
+  "2024": "2024-11-05",
+};
+
+const cycles: Record<string, CycleExport> = {};
+for (const [cycle, day] of Object.entries(CYCLE_DAYS)) {
+  cycles[cycle] = await exportCycle(`elections_baseline_${cycle}`, day);
+}
+
 const out = {
   generatedAt: new Date().toISOString().slice(0, 10),
   methodologyVersion: "2026.09.3",
   // 2026 recomputed without the state-legislation source (which cannot be
   // replayed historically) — the matched-sources number for cross-cycle claims.
   matchedSources2026: await sensitivity(),
-  cycles: {
-    "2022": await exportCycle("elections_baseline_2022", "2022-11-08"),
-    "2024": await exportCycle("elections_baseline_2024", "2024-11-05"),
-  },
+  cycles,
 };
 writeFileSync(OUT, JSON.stringify(out, null, 2));
 console.log(
-  `wrote ${OUT}: 2022 ${out.cycles["2022"].series.length}pts, 2024 ${out.cycles["2024"].series.length}pts, matched-sources ${out.matchedSources2026}`,
+  `wrote ${OUT}: cycles ${Object.keys(cycles).join(",")}, matched-sources ${out.matchedSources2026}`,
 );
