@@ -143,6 +143,12 @@ services:
       COURTLISTENER_TOKEN: ${COURTLISTENER_TOKEN:-}
       # After the ukraine run (07:30) to spread load on the shared db.
       INGEST_TIME_UTC: ${ELECTIONS_INGEST_TIME_UTC:-08:00}
+      # Email digest (unset disables): sent only when material changes landed.
+      SMTP_URL: ${SMTP_URL:-}
+      DIGEST_FROM: ${DIGEST_FROM:-}
+      DIGEST_TO: ${DIGEST_TO:-}
+      DIGEST_RISK_DELTA: ${DIGEST_RISK_DELTA:-0.02}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
     # Ingest once on start, then daily at INGEST_TIME_UTC.
     command: sh scripts/elections/worker-loop.sh
 

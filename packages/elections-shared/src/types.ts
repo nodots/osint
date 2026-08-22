@@ -206,6 +206,33 @@ export interface CaseSummary {
   affectedMechanisms: string[];
 }
 
+// GET /changes — one change-ledger entry (methodology doc §23/§38).
+export interface AssessmentChange {
+  changedAt: string;
+  districtId: string;
+  displayName: string;
+  state: string;
+  currentRisk: number;
+  firstAssessment: boolean;
+  deltaRisk: number;
+  deltaVulnerability: number;
+  deltaResistance: number | null;
+  deltaPressure: number | null;
+  deltaCompetitiveness: number;
+  deltaPivotality: number;
+  dimensionDeltas: Record<string, number> | null;
+  methodologyVersion: string;
+  newEvents: { id: number; title: string; occurredAt: string }[];
+}
+
+// GET /house-control/history — one point of the §35 threat time series.
+export interface ThreatHistoryPoint {
+  date: string; // "YYYY-MM-DD"
+  overallIndex: number; // mean risk index across races, 0–100
+  highRiskRaces: number;
+  highRiskPivotalRaces: number;
+}
+
 // GET /races/:districtId — everything the race detail page renders (spec §22).
 export interface RaceDetail {
   race: RaceSummary;

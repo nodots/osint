@@ -6,6 +6,7 @@ import {
   upsertCases,
 } from "./services/ingest.js";
 import { runAssessments } from "./services/assess.js";
+import { sendDigest } from "./services/digest.js";
 import { finishRun, startRun } from "./services/runs.js";
 import { fetchVotingDockets } from "./sources/courtlistener.js";
 import { fetchVotingRulings } from "./sources/courtlistener-rulings.js";
@@ -172,6 +173,12 @@ async function main() {
   }
 
   await runAssess(now);
+
+  try {
+    await sendDigest(now);
+  } catch (err) {
+    console.error("digest failed:", err instanceof Error ? err.message : err);
+  }
 
   await pool.end();
   if (failures.length > 0) {

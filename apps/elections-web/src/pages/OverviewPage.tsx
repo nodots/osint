@@ -6,9 +6,15 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Grid from "@mui/material/Grid2";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import type { HouseControlSummary } from "@elections-tracker/shared";
+import Link from "@mui/material/Link";
+import type {
+  AssessmentChange,
+  HouseControlSummary,
+  ThreatHistoryPoint,
+} from "@elections-tracker/shared";
 import { useEffect, useState } from "react";
-import { fetchHouseControl } from "../api.js";
+import { Link as RouterLink } from "react-router-dom";
+import { fetchChanges, fetchHouseControl, fetchThreatHistory } from "../api.js";
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
@@ -23,14 +29,63 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
+// §35 threat time series: mean risk index over time. A single point renders
+// as a dot with its value; the line earns its place as history accumulates.
+function ThreatChart({ points }: { points: ThreatHistoryPoint[] }) {
+  const width = 640;
+  const height = 110;
+  const pad = 10;
+  const max = Math.max(...points.map((p) => p.overallIndex), 10);
+  const x = (i: number) =>
+    points.length === 1
+      ? width / 2
+      : pad + (i / (points.length - 1)) * (width - 2 * pad);
+  const y = (v: number) => height - pad - (v / max) * (height - 2 * pad);
+  const path = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.overallIndex).toFixed(1)}`)
+    .join(" ");
+  const last = points[points.length - 1]!;
+  return (
+    <Box sx={{ overflowX: "auto" }}>
+      <svg width={width} height={height} role="img" aria-label="House control threat over time">
+        {points.length > 1 && (
+          <path d={path} fill="none" stroke="#da654c" strokeWidth={2} />
+        )}
+        <circle cx={x(points.length - 1)} cy={y(last.overallIndex)} r={4} fill="#da654c" />
+        <text
+          x={x(points.length - 1) - 8}
+          y={y(last.overallIndex) - 8}
+          fill="#ddd"
+          fontSize={12}
+          textAnchor="end"
+        >
+          {last.overallIndex}
+        </text>
+      </svg>
+    </Box>
+  );
+}
+
 export function OverviewPage() {
   const [summary, setSummary] = useState<HouseControlSummary | null>(null);
+  const [history, setHistory] = useState<ThreatHistoryPoint[] | null>(null);
+  const [recentChanges, setRecentChanges] = useState<AssessmentChange[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchHouseControl(controller.signal)
-      .then(setSummary)
+    Promise.all([
+      fetchHouseControl(controller.signal),
+      fetchThreatHistory(controller.signal),
+      fetchChanges({ minDelta: 0.01 }, controller.signal),
+    ])
+      .then(([control, historyPoints, changes]) => {
+        setSummary(control);
+        setHistory(historyPoints);
+        setRecentChanges(
+          changes.filter((c) => !c.firstAssessment).slice(0, 5),
+        );
+      })
       .catch((err: unknown) => {
         if (!controller.signal.aborted) {
           setError(err instanceof Error ? err.message : "failed to load");
@@ -133,6 +188,60 @@ export function OverviewPage() {
           />
         </Grid>
       </Grid>
+      {history && history.length > 0 && (
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="overline" color="text.secondary">
+              House control threat over time
+            </Typography>
+            <ThreatChart points={history} />
+            {recentChanges.length > 0 && (
+              <>
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 1 }}
+                >
+                  Why did risk change?
+                </Typography>
+                {recentChanges.map((change, i) => (
+                  <Stack key={i} direction="row" spacing={1} sx={{ py: 0.25 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: change.deltaRisk > 0 ? "#da654c" : "#5590d2",
+                        minWidth: 32,
+                      }}
+                    >
+                      {change.deltaRisk > 0 ? "+" : ""}
+                      {Math.round(change.deltaRisk * 100)}
+                    </Typography>
+                    <Link
+                      component={RouterLink}
+                      to={`/races/${change.districtId}`}
+                      variant="body2"
+                    >
+                      {change.districtId}
+                    </Link>
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {change.newEvents[0]?.title ??
+                        Object.entries(change.dimensionDeltas ?? {})
+                          .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+                          .slice(0, 1)
+                          .map(([k]) => k)
+                          .join("")}
+                    </Typography>
+                  </Stack>
+                ))}
+                <Link component={RouterLink} to="/changes" variant="body2">
+                  Full change ledger →
+                </Link>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Typography variant="body2" color="text.secondary">
         Confidence: {summary.confidence.replace("_", " ")} · Methodology{" "}
         {summary.methodologyVersion}

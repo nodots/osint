@@ -1,6 +1,7 @@
 import {
   METHODOLOGY_VERSION,
   type HouseControlSummary,
+  type ThreatHistoryPoint,
 } from "@elections-tracker/shared";
 import { Router } from "express";
 import { pool } from "../db/client.js";
@@ -22,6 +23,49 @@ interface ControlRow {
   dem_seats: string;
   rep_seats: string;
 }
+
+// GET /api/elections/house-control/history — the §35 threat time series: for
+// each day the ledger recorded movement, the mean risk index over every
+// race's latest assessment as of that day. Assessments are append-only, so
+// this is reproducible history, not a recomputation.
+houseControlRouter.get("/history", async (_req, res, next) => {
+  try {
+    const result = await pool.query<{
+      d: string;
+      overall: string;
+      high_risk: string;
+      high_risk_pivotal: string;
+    }>(
+      `WITH days AS (
+         SELECT DISTINCT changed_at::date AS d FROM assessment_changes
+       )
+       SELECT days.d,
+              round((avg(latest.subversion_risk) * 100)::numeric, 1) AS overall,
+              count(*) FILTER (WHERE latest.subversion_risk >= $1) AS high_risk,
+              count(*) FILTER (WHERE latest.subversion_risk >= $1
+                               AND latest.pivotality >= $2) AS high_risk_pivotal
+         FROM days
+         JOIN LATERAL (
+           SELECT DISTINCT ON (race_id) subversion_risk::float8, pivotality::float8
+             FROM race_risk_assessments
+            WHERE assessed_at::date <= days.d
+            ORDER BY race_id, assessed_at DESC
+         ) latest ON true
+        GROUP BY days.d
+        ORDER BY days.d`,
+      [HIGH_RISK, PIVOTAL],
+    );
+    const points: ThreatHistoryPoint[] = result.rows.map((r) => ({
+      date: r.d,
+      overallIndex: Number(r.overall),
+      highRiskRaces: Number(r.high_risk),
+      highRiskPivotalRaces: Number(r.high_risk_pivotal),
+    }));
+    res.json(points);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /api/elections/house-control — the primary dashboard card (spec §11).
 // Baseline seat projection stays null until the forecast layer lands; the

@@ -1,8 +1,10 @@
 import type {
+  AssessmentChange,
   ElectionEventSummary,
   HouseControlSummary,
   RaceDetail,
   RaceSummary,
+  ThreatHistoryPoint,
 } from "@elections-tracker/shared";
 
 const BASE_URL =
@@ -31,6 +33,23 @@ export function fetchHouseControl(signal?: AbortSignal) {
 
 export function fetchRaces(signal?: AbortSignal) {
   return request<RaceSummary[]>("/races", signal);
+}
+
+export function fetchChanges(
+  params: { since?: string; minDelta?: number } = {},
+  signal?: AbortSignal,
+) {
+  const query = new URLSearchParams();
+  if (params.since) query.set("since", params.since);
+  if (params.minDelta !== undefined) {
+    query.set("minDelta", String(params.minDelta));
+  }
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return request<AssessmentChange[]>(`/changes${suffix}`, signal);
+}
+
+export function fetchThreatHistory(signal?: AbortSignal) {
+  return request<ThreatHistoryPoint[]>("/house-control/history", signal);
 }
 
 export function fetchRaceDetail(districtId: string, signal?: AbortSignal) {
