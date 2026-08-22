@@ -52,7 +52,7 @@ function clamp01(value: number): number {
 }
 
 // Linear falloff: a 0-point race scores 1, a 30-point race (or worse) scores
-// 0. Feeds the competitiveness factor of subversionRisk().
+// 0. Feeds the competitiveness factor of the intervention-relevance index.
 export function competitivenessFromMargin(marginPts: number): number {
   return clamp01(1 - Math.abs(marginPts) / 30);
 }

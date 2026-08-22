@@ -246,6 +246,9 @@ export const raceRiskAssessments = pgTable(
     // resistance suppresses vulnerability, active pressure scales relevance.
     institutionalResistance: numeric("institutional_resistance"),
     activePressure: numeric("active_pressure"),
+    // Column name predates the language standard and is retained (append-
+    // only history): the public name is "intervention relevance" — see the
+    // methodology page glossary.
     subversionRisk: numeric("subversion_risk").notNull(),
     confidence: numeric("confidence").notNull().default("0.5"),
     explanations: jsonb("explanations"),

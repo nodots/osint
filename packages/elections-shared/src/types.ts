@@ -103,6 +103,61 @@ export const EVENT_TYPES = [
 
 export type EventType = (typeof EVENT_TYPES)[number];
 
+// Curated display labels (spec §24): internal taxonomy identifiers are never
+// shown raw — a term like PUBLIC_THREAT must read as a description of a
+// documented act, not an assertion about an actor.
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  VOTER_REGISTRATION: "voter registration",
+  VOTER_ROLL_ACCESS: "voter-roll access",
+  VOTER_ROLL_PURGE: "voter-roll purge",
+  CITIZENSHIP_VERIFICATION: "citizenship verification",
+  BALLOT_ACCESS: "ballot access",
+  MAIL_BALLOT_RULE: "mail-ballot rule",
+  EARLY_VOTING_RULE: "early-voting rule",
+  PROVISIONAL_BALLOT_RULE: "provisional-ballot rule",
+  BALLOT_CURE_RULE: "ballot-cure rule",
+  BALLOT_REJECTION: "ballot rejection",
+  ELECTION_ADMINISTRATION: "election administration",
+  FEDERAL_DATA_REQUEST: "federal data request",
+  FEDERAL_DIRECTIVE: "federal directive",
+  STATE_DIRECTIVE: "state directive",
+  COUNTY_ACTION: "county action",
+  REDISTRICTING: "redistricting",
+  LITIGATION_FILED: "litigation filed",
+  COURT_RULING: "court ruling",
+  APPEAL: "appeal",
+  INJUNCTION: "injunction",
+  SCOTUS_ACTION: "SCOTUS action",
+  RECOUNT: "recount",
+  AUDIT: "audit",
+  CERTIFICATION: "certification",
+  CERTIFICATION_REFUSAL: "certification refusal",
+  CANDIDATE_CONTEST: "candidate contest",
+  HOUSE_ELECTION_CONTEST: "House election contest",
+  SEATING_DISPUTE: "seating dispute",
+  LAW_ENFORCEMENT_ACTION: "law-enforcement action",
+  FEDERAL_INVESTIGATION: "federal investigation",
+  PUBLIC_THREAT: "threatening public statement",
+  PUBLIC_DIRECTIVE: "public directive",
+  POLITICAL_PRESSURE: "political pressure on officials",
+};
+
+// Display labels for the assessment dimensions and components, shared by the
+// web pages and the email digest.
+export const DIMENSION_LABELS: Record<string, string> = {
+  federalLeverage: "federal leverage",
+  stateCooperation: "state cooperation",
+  administrativeExposure: "administrative exposure",
+  voterRollExposure: "voter-roll exposure",
+  ballotExposure: "ballot exposure",
+  litigationExposure: "litigation exposure",
+  certificationExposure: "certification exposure",
+  recountExposure: "recount exposure",
+  congressionalContestExposure: "congressional-contest exposure",
+  institutionalResistance: "institutional resistance",
+  activePressure: "active pressure",
+};
+
 export type ConfidenceLabel =
   | "VERY_LOW"
   | "LOW"
@@ -134,7 +189,9 @@ export interface RaceSummary {
   institutionalResistance: number | null;
   activePressure: number | null;
   pivotality: number | null;
-  subversionRisk: number | null;
+  // Public name for the stored subversion_risk column (see the methodology
+  // glossary): the intervention-relevance index in [0,1].
+  interventionRelevance: number | null;
   assessedAt: string | null;
 }
 
@@ -194,7 +251,7 @@ export interface RiskAssessment {
   // 2026.09.1 components; null on rows computed under earlier versions.
   institutionalResistance: number | null;
   activePressure: number | null;
-  subversionRisk: number;
+  interventionRelevance: number;
   confidence: number;
   explanations: unknown;
   triggeringEventIds: number[];

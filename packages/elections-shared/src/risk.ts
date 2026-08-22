@@ -15,6 +15,10 @@
 // 2026.09.3: nationwide-scope injunction detection; active pressure blends
 // separately saturated state and national signals; cases weigh less into
 // pressure than into litigation exposure.
+// 2026-08-22 language revision (no model change): public vocabulary unified —
+// the index is "intervention relevance", the aggregate is "threat to
+// legitimate House control"; "subversion" retired from all public surfaces
+// (the append-only subversion_risk column name is retained and documented).
 export const METHODOLOGY_VERSION = "2026.09.3";
 
 // All dimensions are normalized to [0,1].
@@ -64,23 +68,16 @@ export function processVulnerability(dims: VulnerabilityDimensions): number {
   return clamp01(total);
 }
 
-// Race Subversion Risk = Process Vulnerability × Competitiveness × Pivotality
-// (spec §9). The multiplicative structure is the point: a deeply vulnerable
-// safe seat does not matter, and a robust toss-up is hard to manipulate — the
-// problem is the vulnerable 50/50 district that decides seat 218.
-export function subversionRisk(
+// Pre-2026.09 multiplicative index (spec §9): Vulnerability ×
+// Competitiveness × Pivotality. Retained only for the legacy admin entry
+// route; the live model is interventionRelevance() in derivation.ts. The
+// multiplicative intuition still holds: a deeply vulnerable safe seat does
+// not matter, and a robust toss-up is hard to affect — the concern is the
+// vulnerable 50/50 district that decides seat 218.
+export function multiplicativeRisk(
   vulnerability: number,
   competitiveness: number,
   pivotality: number,
 ): number {
   return clamp01(clamp01(vulnerability) * clamp01(competitiveness) * clamp01(pivotality));
-}
-
-export type SubversionRelevance = "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH";
-
-export function subversionRelevance(risk: number): SubversionRelevance {
-  if (risk < 0.05) return "LOW";
-  if (risk < 0.12) return "MEDIUM";
-  if (risk < 0.25) return "HIGH";
-  return "VERY_HIGH";
 }

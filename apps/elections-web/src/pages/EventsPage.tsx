@@ -12,7 +12,9 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import {
   EVENT_TYPES,
+  EVENT_TYPE_LABELS,
   confidenceLabel,
+  type EventType,
   type ElectionEventSummary,
   type RaceSummary,
 } from "@elections-tracker/shared";
@@ -32,8 +34,12 @@ const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+// Curated labels (spec §24): raw taxonomy identifiers are never shown.
 function typeLabel(eventType: string): string {
-  return eventType.toLowerCase().replace(/_/g, " ");
+  return (
+    EVENT_TYPE_LABELS[eventType as EventType] ?? // filter values round-trip the EVENT_TYPES options
+    eventType.toLowerCase().replace(/_/g, " ")
+  );
 }
 
 export function sourceLinkLabel(

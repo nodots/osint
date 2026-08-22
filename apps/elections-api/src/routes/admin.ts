@@ -2,7 +2,7 @@ import {
   EVENT_TYPES,
   METHODOLOGY_VERSION,
   processVulnerability,
-  subversionRisk,
+  multiplicativeRisk,
 } from "@elections-tracker/shared";
 import { Router, type RequestHandler } from "express";
 import { z } from "zod";
@@ -125,7 +125,7 @@ adminRouter.post("/assessments", async (req, res, next) => {
     }
     const a = parsed.data;
     const vulnerability = processVulnerability(a);
-    const risk = subversionRisk(vulnerability, a.competitiveness, a.pivotality);
+    const risk = multiplicativeRisk(vulnerability, a.competitiveness, a.pivotality);
     const result = await pool.query(
       `INSERT INTO race_risk_assessments
          (race_id, competitiveness, pivotality, federal_leverage,

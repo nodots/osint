@@ -23,6 +23,28 @@ export function MethodologyPage() {
         title={`Methodology ${METHODOLOGY_VERSION}`}
         meta="every parameter below is published; ratings are derived under a separately versioned model"
       />
+      <Typography variant="h6" sx={{ fontWeight: 300 }}>
+        What this measures — and what it does not
+      </Typography>
+      <Typography variant="body1">
+        The protected value is <em>legitimate control</em>: control of the
+        House as determined by voters under law and norms. The monitor
+        assesses the risk that control is instead determined by improper use
+        of governmental process — whichever party that use would favor. It
+        does not assess who will win, whether fraud will occur, or any
+        actor&apos;s intent: effects are never labeled as intent, and intent
+        is not an assessed dimension. The model also does not adjudicate
+        legality — the ingested court rulings do, and they enter the model as
+        institutional resistance.
+      </Typography>
+      <Typography variant="body1">
+        Three registers are kept separate, per the language discipline this
+        project publishes and holds itself to. Documented: &quot;DOJ requested
+        voter records.&quot; Assessed: &quot;this increases voter-roll
+        exposure.&quot; Not established, and never stated: &quot;DOJ requested
+        the records in order to alter a race.&quot; All indices are ordinal
+        rankings on defined evidence signals, never probabilities.
+      </Typography>
       <Typography variant="body1">
         Facts, claims, and assessments are different objects. Nothing here is
         hand-entered: events are ingested from public sources, every risk
@@ -31,11 +53,11 @@ export function MethodologyPage() {
       </Typography>
       <Typography variant="body1">
         Process vulnerability is a weighted mean of nine dimensions, each
-        normalized to 0–1. Race subversion risk is the product of process
-        vulnerability, competitiveness, and House-control pivotality: a
-        vulnerable safe seat does not matter, and a robust toss-up is hard to
-        manipulate — the concern is the vulnerable 50/50 district that decides
-        seat 218.
+        normalized to 0–1. A race&apos;s intervention relevance combines
+        vulnerability (suppressed by institutional resistance), electoral
+        exposure, and active pressure: a vulnerable safe seat does not matter,
+        and a robust toss-up is hard to affect — the concern is the vulnerable
+        50/50 district that decides seat 218.
       </Typography>
       <Typography variant="h6" sx={{ fontWeight: 300 }}>
         Dimension weights
@@ -151,6 +173,29 @@ export function MethodologyPage() {
             (CC0).
           </li>
         </ul>
+      </Typography>
+
+      <Typography variant="h6" sx={{ fontWeight: 300 }}>
+        Scales and glossary
+      </Typography>
+      <Typography variant="body1">
+        The race-level index, <strong>intervention relevance</strong> (0–100),
+        reads MINIMAL under 20, LOW under 40, MODERATE under 60, HIGH under
+        75, VERY HIGH at 75 and above. The aggregate,{" "}
+        <strong>threat to legitimate House control</strong>, is LOW when no
+        high-risk race is pivotal, MODERATE at one or more, HIGH at three or
+        more high-risk pivotal races, and UNKNOWN with no assessed races.
+      </Typography>
+      <Typography variant="body1">
+        For reproducibility against the raw data: the public term
+        &quot;intervention relevance&quot; is the API field{" "}
+        <code>interventionRelevance</code> and the stored column{" "}
+        <code>subversion_risk</code> — the column name predates this language
+        standard and is retained because assessment history is append-only and
+        never rewritten. &quot;Threat to legitimate House control&quot; is the
+        API field <code>controlThreat</code>. The nine dimension fields and{" "}
+        <code>institutional_resistance</code>/<code>active_pressure</code>{" "}
+        carry their public names.
       </Typography>
 
       <Typography variant="h6" sx={{ fontWeight: 300 }}>

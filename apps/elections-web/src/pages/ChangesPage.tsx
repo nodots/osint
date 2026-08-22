@@ -6,7 +6,7 @@ import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import type { AssessmentChange } from "@elections-tracker/shared";
+import { DIMENSION_LABELS, type AssessmentChange } from "@elections-tracker/shared";
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { fetchChanges } from "../api.js";
@@ -28,7 +28,7 @@ const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
 });
 
 function dimLabel(key: string): string {
-  return key.replace(/([A-Z])/g, " $1").toLowerCase().trim();
+  return DIMENSION_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").toLowerCase().trim();
 }
 
 function pct(value: number): string {

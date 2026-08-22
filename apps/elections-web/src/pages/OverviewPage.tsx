@@ -128,7 +128,9 @@ export function OverviewPage() {
       r.assessedAt && (!latest || r.assessedAt > latest) ? r.assessedAt : latest,
     null,
   );
-  const topRaces = races.filter((r) => r.subversionRisk != null).slice(0, 5);
+  const topRaces = races
+    .filter((r) => r.interventionRelevance != null)
+    .slice(0, 5);
   const threatColor = THREAT_COLORS[summary.controlThreat] ?? UP_COLOR;
 
   return (
@@ -143,7 +145,7 @@ export function OverviewPage() {
           <Paper variant="outlined" sx={{ p: 2.5, height: "100%" }}>
             <Stack spacing={1}>
               <Typography variant="overline" color="text.secondary">
-                Election-process threat to House control
+                Threat to legitimate House control
               </Typography>
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Typography variant="h3" sx={{ fontWeight: 300, color: threatColor }}>
@@ -156,7 +158,7 @@ export function OverviewPage() {
               <Typography variant="body2" color="text.secondary">
                 {summary.controlThreat === "UNKNOWN"
                   ? "No assessed races yet — no basis for a threat call."
-                  : `Control plausibly depends on exposed races: ${summary.highRiskPivotalRaces} high-risk pivotal race${summary.highRiskPivotalRaces === 1 ? "" : "s"} against a ${summary.seatsToFlipControl ?? "—"}-seat cushion.`}
+                  : `Risk that control is determined by improper use of governmental process rather than by voters: ${summary.highRiskPivotalRaces} high-risk pivotal race${summary.highRiskPivotalRaces === 1 ? "" : "s"} against a ${summary.seatsToFlipControl ?? "—"}-seat cushion.`}
               </Typography>
             </Stack>
           </Paper>
@@ -219,7 +221,7 @@ export function OverviewPage() {
           <Paper variant="outlined" sx={{ p: 2.5, height: "100%" }}>
             <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
               <Typography variant="overline" color="text.secondary">
-                House control threat over time
+                Threat to legitimate control over time
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 mean risk index, all 435 races · last {history.length} days
@@ -321,7 +323,7 @@ export function OverviewPage() {
                       />
                     </Stack>
                     <Typography variant="caption" color="text.secondary">
-                      risk {Math.round((race.subversionRisk ?? 0) * 100)}
+                      relevance {Math.round((race.interventionRelevance ?? 0) * 100)}
                       {race.institutionalResistance != null &&
                         ` · resistance ${Math.round(race.institutionalResistance * 100)}`}
                       {race.activePressure != null &&

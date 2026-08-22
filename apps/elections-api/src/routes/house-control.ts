@@ -8,7 +8,7 @@ import { pool } from "../db/client.js";
 
 export const houseControlRouter = Router();
 
-// Latest-assessment risk thresholds; see subversionRelevance in
+// Latest-assessment risk thresholds; see riskLevel in
 // @elections-tracker/shared — HIGH starts at 0.12.
 const HIGH_RISK = 0.12;
 const PIVOTAL = 0.1;

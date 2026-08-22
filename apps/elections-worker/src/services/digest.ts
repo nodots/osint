@@ -1,4 +1,9 @@
 import nodemailer from "nodemailer";
+import {
+  DIMENSION_LABELS,
+  EVENT_TYPE_LABELS,
+  type EventType,
+} from "@elections-tracker/shared";
 import { pool } from "../db.js";
 
 // Email digest (§38: notify only when something meaningful changes). Sent
@@ -80,21 +85,23 @@ export async function sendDigest(runStartedAt: Date): Promise<
     for (const e of newEvents.rows) {
       lines.push(
         `• ${e.title}`,
-        `  [${e.event_types.join(", ")}] ${e.jurisdictions.join(", ")}`,
+        // Stored values are EventType strings; the cast narrows the text[]
+        // column for the label lookup.
+        `  [${e.event_types.map((t) => EVENT_TYPE_LABELS[t as EventType] ?? t).join(", ")}] ${e.jurisdictions.join(", ")}`,
         "",
       );
     }
   }
   if (changes.rows.length > 0) {
-    lines.push("RISK CHANGES", "");
+    lines.push("INDEX CHANGES", "");
     for (const c of changes.rows) {
       const dims = Object.entries(c.dimension_deltas ?? {})
         .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
         .slice(0, 3)
-        .map(([k, v]) => `${k} ${pct(v)}`)
+        .map(([k, v]) => `${DIMENSION_LABELS[k] ?? k} ${pct(v)}`)
         .join(", ");
       lines.push(
-        `• ${c.district_id} (${c.display_name}): risk ${pct(c.delta_risk)} → ${Math.round(Number(c.subversion_risk) * 100)}`,
+        `• ${c.district_id} (${c.display_name}): relevance ${pct(c.delta_risk)} → ${Math.round(Number(c.subversion_risk) * 100)}`,
       );
       if (dims) lines.push(`  ${dims}`);
       for (const title of (c.new_event_titles ?? []).slice(0, 3)) {
@@ -117,7 +124,7 @@ export async function sendDigest(runStartedAt: Date): Promise<
   const info = await transporter.sendMail({
     from: process.env.DIGEST_FROM ?? "elections-monitor@localhost",
     to,
-    subject: `Election Integrity Monitor — ${newEvents.rows.length} development${newEvents.rows.length === 1 ? "" : "s"}, ${changes.rows.length} risk change${changes.rows.length === 1 ? "" : "s"}`,
+    subject: `Election Integrity Monitor — ${newEvents.rows.length} development${newEvents.rows.length === 1 ? "" : "s"}, ${changes.rows.length} index change${changes.rows.length === 1 ? "" : "s"}`,
     text: lines.join("\n"),
   });
   if (smtpUrl === "console" && "message" in info) {

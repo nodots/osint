@@ -183,7 +183,7 @@ export function RaceDetailPage() {
   const evidenceByDimension = new Map(
     (explanations?.drivers ?? []).map((d) => [d.dimension, d.evidence.length]),
   );
-  const riskIndex = latest ? Math.round(latest.subversionRisk * 100) : null;
+  const riskIndex = latest ? Math.round(latest.interventionRelevance * 100) : null;
   const level = riskIndex != null ? riskLevel(riskIndex) : null;
 
   return (
@@ -319,7 +319,7 @@ export function RaceDetailPage() {
         <Grid size={{ xs: 12, md: 7 }}>
           <Paper variant="outlined" sx={{ p: 2.5, height: "100%" }}>
             <Typography variant="overline" color="text.secondary">
-              Threat assessment
+              Assessment
             </Typography>
             {latest && riskIndex != null && level ? (
               <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -350,8 +350,8 @@ export function RaceDetailPage() {
                   )}
                   <HeroStat
                     label="Pivotality"
-                    value={`${Math.round(latest.pivotality * 100)}%`}
-                    sublabel="chance-weighted control stake"
+                    value={`${Math.round(latest.pivotality * 100)}`}
+                    sublabel="weight in control-deciding outcomes"
                   />
                 </Stack>
 
@@ -400,7 +400,7 @@ export function RaceDetailPage() {
           <Paper variant="outlined" sx={{ p: 2.5 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="baseline">
               <Typography variant="overline" color="text.secondary">
-                Risk history
+                Intervention relevance over time
               </Typography>
               {detail.assessments.length > 1 && (
                 <Typography variant="caption" color="text.secondary">
@@ -464,7 +464,7 @@ export function RaceDetailPage() {
 function RiskHistoryChart({ assessments }: { assessments: RiskAssessment[] }) {
   const byDay = new Map<string, number>();
   for (const a of [...assessments].reverse()) {
-    byDay.set(a.assessedAt.slice(0, 10), Math.round(a.subversionRisk * 100));
+    byDay.set(a.assessedAt.slice(0, 10), Math.round(a.interventionRelevance * 100));
   }
   const points = [...byDay.entries()].map(([date, value]) => ({ date, value }));
   return <TimeSeriesChart points={points} width={1100} height={200} />;

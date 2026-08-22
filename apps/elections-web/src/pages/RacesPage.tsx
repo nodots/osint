@@ -65,7 +65,7 @@ export function RacesPage() {
               <TableCell>District</TableCell>
               <TableCell>Incumbent</TableCell>
               <TableCell>Rating</TableCell>
-              <TableCell align="right">Risk index</TableCell>
+              <TableCell align="right">Intervention relevance</TableCell>
               <TableCell align="right">Vulnerability</TableCell>
               <TableCell align="right">Resistance</TableCell>
               <TableCell align="right">Pressure</TableCell>
@@ -104,7 +104,7 @@ export function RacesPage() {
                   />
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600 }}>
-                  {pct(race.subversionRisk)}
+                  {pct(race.interventionRelevance)}
                 </TableCell>
                 <TableCell align="right">{pct(race.processVulnerability)}</TableCell>
                 <TableCell align="right">{pct(race.institutionalResistance)}</TableCell>

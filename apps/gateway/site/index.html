@@ -95,7 +95,7 @@
           Election Integrity Monitor
         </h2>
         <p class="question">Could documented government actions plausibly change control of the U.S. House?</p>
-        <p>An evidence-backed threat assessment of the 2026 election process &mdash; not a forecast. Federal rules, voting-rights litigation, state legislation, and court rulings are ingested daily and scored by a published deterministic model: vulnerability, suppressed by institutional resistance, scaled by how pivotal each race is to control.</p>
+        <p>An evidence-backed assessment of the risk that House control could be determined by improper use of governmental process rather than by voters &mdash; not a forecast. Federal rules, voting-rights litigation, state legislation, and court rulings are ingested daily and scored by a published deterministic model: vulnerability, suppressed by institutional resistance, weighted by how pivotal each race is to control.</p>
         <div class="stats" id="elections-stats"></div>
         <p class="sources">Sources: Federal Register &middot; CourtListener &middot; SCOTUS opinions &middot; OpenStates &middot; FEC &middot; Census &middot; MIT Election Lab &middot; GDELT</p>
         <span class="open">Open the monitor &rarr;</span>
@@ -121,7 +121,7 @@
         if (!s) return;
         var el = document.getElementById("elections-stats");
         el.innerHTML =
-          stat(s.controlThreat, "control threat") +
+          stat(s.controlThreat, "threat to legitimate control") +
           stat(s.competitiveRaces, "competitive races") +
           stat(s.highRiskPivotalRaces, "high-risk pivotal");
       })

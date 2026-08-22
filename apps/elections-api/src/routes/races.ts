@@ -58,7 +58,8 @@ function toSummary(r: RaceSummaryRow): RaceSummary {
     activePressure:
       r.active_pressure == null ? null : Number(r.active_pressure),
     pivotality: r.pivotality == null ? null : Number(r.pivotality),
-    subversionRisk: r.subversion_risk == null ? null : Number(r.subversion_risk),
+    interventionRelevance:
+      r.subversion_risk == null ? null : Number(r.subversion_risk),
     assessedAt: r.assessed_at?.toISOString() ?? null,
   };
 }
@@ -180,7 +181,7 @@ racesRouter.get("/:districtId", async (req, res, next) => {
             : Number(a.institutional_resistance),
         activePressure:
           a.active_pressure == null ? null : Number(a.active_pressure),
-        subversionRisk: Number(a.subversion_risk),
+        interventionRelevance: Number(a.subversion_risk),
         confidence: Number(a.confidence),
         explanations: a.explanations,
         triggeringEventIds: a.triggering_event_ids,
