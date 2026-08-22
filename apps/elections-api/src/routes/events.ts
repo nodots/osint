@@ -52,7 +52,23 @@ eventsRouter.get("/", async (req, res, next) => {
         LIMIT $${params.length}`,
       params,
     );
-    res.json(result.rows);
+    // Normalize to the shared ElectionEventSummary contract (camelCase,
+    // numeric confidence) — clients type against it.
+    res.json(
+      result.rows.map((e) => ({
+        id: e.id,
+        occurredAt: e.occurred_at.toISOString(),
+        title: e.title,
+        summary: e.summary,
+        eventTypes: e.event_types,
+        jurisdictionType: e.jurisdiction_type,
+        jurisdictions: e.jurisdictions,
+        factualStatus: e.factual_status,
+        operationalStatus: e.operational_status,
+        confidence: Number(e.confidence),
+        affectedRaceIds: e.affected_race_ids,
+      })),
+    );
   } catch (err) {
     next(err);
   }
