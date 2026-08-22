@@ -154,10 +154,11 @@ export async function runAssessments(now: Date): Promise<{
     const ageDays = (now.getTime() - event.occurred_at.getTime()) / 86400000;
     const types = event.event_types as EventType[];
     const status = event.operational_status as OperationalStatus;
-    const dims = dimensionsForEvent(event.event_types);
-    if (dims.length === 0) continue;
     const disposition = eventDisposition(types, status, ageDays);
     if (disposition.kind === "expired") continue;
+    const dims = dimensionsForEvent(event.event_types);
+    // A pure resistance event maps to no vulnerability dimension — that's fine.
+    if (disposition.kind === "vulnerability" && dims.length === 0) continue;
 
     const states = event.jurisdictions.filter((j) => allStates.has(j));
     const national = event.jurisdictions.includes("US") || states.length === 0;

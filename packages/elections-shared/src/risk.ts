@@ -10,7 +10,9 @@
 // pressure scales relevance, electoral exposure goes additive, decay is
 // per event class, and a materiality gate keeps routine paperwork out of
 // the signals (after the v0.1 methodology spec).
-export const METHODOLOGY_VERSION = "2026.09.1";
+// 2026.09.2: court rulings ingest with direction — INJUNCTION events are
+// resistance-side (full weight while in force, nothing once dissolved).
+export const METHODOLOGY_VERSION = "2026.09.2";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {

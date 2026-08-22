@@ -8,6 +8,7 @@ import {
 import { runAssessments } from "./services/assess.js";
 import { finishRun, startRun } from "./services/runs.js";
 import { fetchVotingDockets } from "./sources/courtlistener.js";
+import { fetchVotingRulings } from "./sources/courtlistener-rulings.js";
 import { fetchFederalRegisterEvents } from "./sources/federal-register.js";
 
 // Elections ingest worker. Mirrors the ukraine worker: one audited run per
@@ -80,6 +81,40 @@ async function runCourtListener(from: Date, mode: string): Promise<void> {
   }
 }
 
+async function runCourtListenerRulings(from: Date, mode: string): Promise<void> {
+  const runId = await startRun("events:courtlistener_rulings");
+  try {
+    const { events, cases } = await fetchVotingRulings(
+      from,
+      mode === "daily" ? 5 : 30,
+    );
+    const caseCounts = await upsertCases(cases);
+    const eventCounts = await insertEvents(
+      events.map(({ caseKey, ...event }) => ({
+        ...event,
+        relatedCaseId: caseCounts.ids.get(caseKey),
+      })),
+    );
+    await finishRun(runId, {
+      status: "success",
+      recordsSeen: eventCounts.seen,
+      recordsInserted: eventCounts.inserted,
+      recordsSkipped: eventCounts.skipped,
+    });
+    const blocks = events.filter((e) => e.rawData.direction === "BLOCKS").length;
+    console.log(
+      `events[courtlistener_rulings] seen=${eventCounts.seen} inserted=${eventCounts.inserted} ` +
+        `blocks=${blocks} denials=${events.length - blocks}`,
+    );
+  } catch (err) {
+    await finishRun(runId, {
+      status: "failure",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
 async function runAssess(now: Date): Promise<void> {
   const runId = await startRun("assess:derived");
   try {
@@ -126,6 +161,7 @@ async function main() {
   for (const [name, run] of [
     ["federal_register", () => runFederalRegister(from)],
     ["courtlistener", () => runCourtListener(from, mode)],
+    ["courtlistener_rulings", () => runCourtListenerRulings(from, mode)],
   ] as const) {
     try {
       await run();

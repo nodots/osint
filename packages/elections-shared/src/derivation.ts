@@ -69,7 +69,6 @@ export const DIMENSION_EVENT_TYPES: Record<
     "LITIGATION_FILED",
     "COURT_RULING",
     "APPEAL",
-    "INJUNCTION",
     "SCOTUS_ACTION",
   ],
   certificationExposure: ["CERTIFICATION", "CERTIFICATION_REFUSAL", "AUDIT"],
@@ -119,6 +118,15 @@ const BLOCKED_STATUSES: ReadonlySet<OperationalStatus> = new Set<OperationalStat
   "SUPERSEDED",
 ]);
 
+// Events that ARE institutional resistance (2026.09.2): a court blocking a
+// governmental election action. In the NOS-441 universe — suits challenging
+// government action — an injunction overwhelmingly runs against the
+// government actor; that approximation is documented in the methodology. An
+// injunction in force does not decay (§26); one overturned or expired counts
+// for nothing on either side.
+export const RESISTANCE_EVENT_TYPES: ReadonlySet<EventType> =
+  new Set<EventType>(["INJUNCTION"]);
+
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
@@ -136,6 +144,11 @@ export function eventDisposition(
   ageDays: number,
 ): EventDisposition {
   const ruleLike = types.some((t) => RULE_LIKE.has(t));
+  if (types.some((t) => RESISTANCE_EVENT_TYPES.has(t))) {
+    // The event itself is a block on government action.
+    if (status === "ACTIVE") return { kind: "resistance", weight: 1 };
+    return { kind: "expired" };
+  }
   if (BLOCKED_STATUSES.has(status)) {
     // The action was stopped by an institution — that is resistance working,
     // decayed so ancient rulings don't dominate.
