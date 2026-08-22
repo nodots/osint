@@ -1,6 +1,7 @@
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { PageHeader } from "../components/PageHeader.js";
 import {
   CASE_WEIGHT,
   METHODOLOGY_VERSION,
@@ -18,9 +19,10 @@ import {
 export function MethodologyPage() {
   return (
     <Stack spacing={2} sx={{ maxWidth: 700 }}>
-      <Typography variant="h5" sx={{ fontWeight: 300 }}>
-        Methodology {METHODOLOGY_VERSION}
-      </Typography>
+      <PageHeader
+        title={`Methodology ${METHODOLOGY_VERSION}`}
+        meta="every parameter below is published; ratings are derived under a separately versioned model"
+      />
       <Typography variant="body1">
         Facts, claims, and assessments are different objects. Nothing here is
         hand-entered: events are ingested from public sources, every risk

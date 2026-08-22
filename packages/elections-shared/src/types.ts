@@ -131,6 +131,8 @@ export interface RaceSummary {
   ratingSource: string | null;
   status: RaceStatus;
   processVulnerability: number | null;
+  institutionalResistance: number | null;
+  activePressure: number | null;
   pivotality: number | null;
   subversionRisk: number | null;
   assessedAt: string | null;

@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import { fetchRaceDetail } from "../api.js";
+import { TimeSeriesChart } from "../components/TimeSeriesChart.js";
 import { NO_RATING_COLOR, RATING_COLORS, ratingLabel } from "../format.js";
 
 function marginLabel(margin: number | null): string {
@@ -75,46 +76,15 @@ const DRIVER_LABELS: [keyof RiskAssessment, string][] = [
   ["congressionalContestExposure", "Congressional contest exposure"],
 ];
 
-// Minimal inline risk-history line: subversion risk in [0,1] over time.
+// Risk history via the shared chart: one point per assessment day (newest
+// assessment of the day wins), risk on the 0–100 index scale.
 function RiskHistoryChart({ assessments }: { assessments: RiskAssessment[] }) {
-  const points = [...assessments].reverse(); // API returns newest-first
-  const width = 560;
-  const height = 120;
-  const pad = 8;
-  const t0 = new Date(points[0]!.assessedAt).getTime();
-  const t1 = new Date(points[points.length - 1]!.assessedAt).getTime();
-  const x = (t: number) =>
-    t1 === t0 ? width / 2 : pad + ((t - t0) / (t1 - t0)) * (width - 2 * pad);
-  const y = (risk: number) => height - pad - risk * (height - 2 * pad);
-  const path = points
-    .map(
-      (p, i) =>
-        `${i === 0 ? "M" : "L"}${x(new Date(p.assessedAt).getTime()).toFixed(1)},${y(p.subversionRisk).toFixed(1)}`,
-    )
-    .join(" ");
-  const last = points[points.length - 1]!;
-  return (
-    <Box sx={{ overflowX: "auto" }}>
-      <svg width={width} height={height} role="img" aria-label="Risk history">
-        <path d={path} fill="none" stroke="#da654c" strokeWidth={2} />
-        <circle
-          cx={x(new Date(last.assessedAt).getTime())}
-          cy={y(last.subversionRisk)}
-          r={4}
-          fill="#da654c"
-        />
-        <text
-          x={x(new Date(last.assessedAt).getTime()) - 8}
-          y={y(last.subversionRisk) - 8}
-          fill="#ddd"
-          fontSize={12}
-          textAnchor="end"
-        >
-          {Math.round(last.subversionRisk * 100)}
-        </text>
-      </svg>
-    </Box>
-  );
+  const byDay = new Map<string, number>();
+  for (const a of [...assessments].reverse()) {
+    byDay.set(a.assessedAt.slice(0, 10), Math.round(a.subversionRisk * 100));
+  }
+  const points = [...byDay.entries()].map(([date, value]) => ({ date, value }));
+  return <TimeSeriesChart points={points} width={820} height={200} />;
 }
 
 export function RaceDetailPage() {

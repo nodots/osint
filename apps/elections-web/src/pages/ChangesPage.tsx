@@ -10,6 +10,7 @@ import type { AssessmentChange } from "@elections-tracker/shared";
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { fetchChanges } from "../api.js";
+import { PageHeader } from "../components/PageHeader.js";
 
 // "What changed" (methodology doc §23/§38): the auditable change ledger.
 // Risk-up in the red arm's color, risk-down in the blue arm's — matching the
@@ -78,13 +79,10 @@ export function ChangesPage() {
 
   return (
     <Box sx={{ maxWidth: 860 }}>
-      <Typography variant="h5" sx={{ fontWeight: 300, mb: 1 }}>
-        What changed
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Every entry is a movement in a race&apos;s risk index with the events
-        that drove it. Indices are ordinal, not probabilities.
-      </Typography>
+      <PageHeader
+        title="What changed"
+        meta="every entry is a movement in a race's risk index with the events that drove it · indices are ordinal, not probabilities"
+      />
       {byDay.map(([day, dayChanges]) => (
         <Box key={day} sx={{ mb: 2 }}>
           <Typography

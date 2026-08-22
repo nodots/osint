@@ -18,6 +18,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { fetchEvents, fetchRaces } from "../api.js";
+import { PageHeader } from "../components/PageHeader.js";
 
 const MONTH_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -113,6 +114,10 @@ export function EventsPage() {
 
   return (
     <Box sx={{ maxWidth: 860 }}>
+      <PageHeader
+        title="Events"
+        meta={`${events.length} on record · discovery-tier news clusters inform the timeline but move no scores`}
+      />
       <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 220 }}>
           <InputLabel>Event type</InputLabel>

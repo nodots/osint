@@ -8,11 +8,13 @@ export const racesRouter = Router();
 const RACE_SUMMARY_SQL = `
   SELECT r.id, r.district_id, d.display_name, d.state, r.incumbent_party,
          r.rating, r.rating_source, r.status,
-         a.process_vulnerability, a.pivotality, a.subversion_risk, a.assessed_at
+         a.process_vulnerability, a.institutional_resistance, a.active_pressure,
+         a.pivotality, a.subversion_risk, a.assessed_at
     FROM races r
     JOIN districts d ON d.id = r.district_id
     LEFT JOIN LATERAL (
-      SELECT process_vulnerability, pivotality, subversion_risk, assessed_at
+      SELECT process_vulnerability, institutional_resistance, active_pressure,
+             pivotality, subversion_risk, assessed_at
         FROM race_risk_assessments
        WHERE race_id = r.id
        ORDER BY assessed_at DESC
@@ -30,6 +32,8 @@ interface RaceSummaryRow {
   rating_source: string | null;
   status: RaceStatus;
   process_vulnerability: string | null; // numeric comes back as string from pg
+  institutional_resistance: string | null;
+  active_pressure: string | null;
   pivotality: string | null;
   subversion_risk: string | null;
   assessed_at: Date | null;
@@ -47,6 +51,12 @@ function toSummary(r: RaceSummaryRow): RaceSummary {
     status: r.status,
     processVulnerability:
       r.process_vulnerability == null ? null : Number(r.process_vulnerability),
+    institutionalResistance:
+      r.institutional_resistance == null
+        ? null
+        : Number(r.institutional_resistance),
+    activePressure:
+      r.active_pressure == null ? null : Number(r.active_pressure),
     pivotality: r.pivotality == null ? null : Number(r.pivotality),
     subversionRisk: r.subversion_risk == null ? null : Number(r.subversion_risk),
     assessedAt: r.assessed_at?.toISOString() ?? null,
