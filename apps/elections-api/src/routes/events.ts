@@ -43,12 +43,23 @@ eventsRouter.get("/", async (req, res, next) => {
     params.push(limit);
 
     const result = await pool.query(
-      `SELECT id, occurred_at, discovered_at, title, summary, event_types,
-              jurisdiction_type, jurisdictions, factual_status,
-              operational_status, confidence, affected_race_ids
-         FROM events
+      `SELECT e.id, e.occurred_at, e.discovered_at, e.title, e.summary,
+              e.event_types, e.jurisdiction_type, e.jurisdictions,
+              e.factual_status, e.operational_status, e.confidence,
+              e.affected_race_ids,
+              COALESCE(ev.url, e.raw_data->>'url') AS source_url,
+              ev.source_name
+         FROM events e
+         LEFT JOIN LATERAL (
+           SELECT ev.url, s.name AS source_name
+             FROM evidence ev
+             LEFT JOIN sources s ON s.id = ev.source_id
+            WHERE ev.event_id = e.id
+            ORDER BY ev.primary_source DESC, ev.id
+            LIMIT 1
+         ) ev ON true
         ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-        ORDER BY occurred_at DESC
+        ORDER BY e.occurred_at DESC
         LIMIT $${params.length}`,
       params,
     );
@@ -67,6 +78,8 @@ eventsRouter.get("/", async (req, res, next) => {
         operationalStatus: e.operational_status,
         confidence: Number(e.confidence),
         affectedRaceIds: e.affected_race_ids,
+        sourceName: e.source_name,
+        sourceUrl: e.source_url,
       })),
     );
   } catch (err) {

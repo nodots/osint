@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import FormControl from "@mui/material/FormControl";
+import Link from "@mui/material/Link";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
@@ -33,6 +34,15 @@ const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
 
 function typeLabel(eventType: string): string {
   return eventType.toLowerCase().replace(/_/g, " ");
+}
+
+export function sourceLinkLabel(
+  name: string | null,
+  url: string,
+): string {
+  if (name) return name;
+  const match = /^https?:\/\/(?:www\.)?([^/]+)/i.exec(url);
+  return match?.[1] ?? "Open source";
 }
 
 // Discovered-vs-occurred matters analytically (spec §5), but the public
@@ -258,6 +268,17 @@ export function EventsPage() {
                 <Typography variant="body2" color="text.secondary">
                   {event.summary}
                 </Typography>
+                {event.sourceUrl && (
+                  <Link
+                    href={event.sourceUrl}
+                    target="_blank"
+                    rel="noopener"
+                    variant="body2"
+                    sx={{ display: "inline-block", mt: 0.75 }}
+                  >
+                    {sourceLinkLabel(event.sourceName, event.sourceUrl)} ↗
+                  </Link>
+                )}
                 {event.affectedRaceIds.length > 0 && (
                   <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                     {event.affectedRaceIds.map((raceId) => {

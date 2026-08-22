@@ -165,9 +165,7 @@ export async function fetchGkgDiscovery(day: Date): Promise<SourceEvent[]> {
       summary:
         `${cluster.domains.size} outlets reported ${cluster.label}-related election ` +
         `activity in ${cluster.state}. Discovery-tier signal (uncorroborated news ` +
-        `clustering); does not move risk scores. Sample coverage: ${cluster.urls
-          .slice(0, 3)
-          .join(" ")}`,
+        `clustering); does not move risk scores.`,
       factualStatus: "REPORTED",
       operationalStatus: "ACTIVE",
       confidence: 0.3,

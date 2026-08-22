@@ -162,6 +162,10 @@ export interface ElectionEventSummary {
   operationalStatus: OperationalStatus;
   confidence: number;
   affectedRaceIds: number[];
+  // Primary evidence link (spec §7): the registered source's name and the
+  // fetched document's URL.
+  sourceName: string | null;
+  sourceUrl: string | null;
 }
 
 export interface ForecastSnapshot {

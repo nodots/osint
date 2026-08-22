@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import { fetchRaceDetail } from "../api.js";
 import { TimeSeriesChart } from "../components/TimeSeriesChart.js";
+import { sourceLinkLabel } from "./EventsPage.js";
 import { NO_RATING_COLOR, RATING_COLORS, ratingLabel } from "../format.js";
 
 function marginLabel(margin: number | null): string {
@@ -295,6 +296,16 @@ export function RaceDetailPage() {
                   </Typography>
                   <Typography variant="subtitle2">{event.title}</Typography>
                   <Typography variant="body2">{event.summary}</Typography>
+                  {event.sourceUrl && (
+                    <Link
+                      href={event.sourceUrl}
+                      target="_blank"
+                      rel="noopener"
+                      variant="body2"
+                    >
+                      {sourceLinkLabel(event.sourceName, event.sourceUrl)} ↗
+                    </Link>
+                  )}
                 </Box>
               ))
             )}
