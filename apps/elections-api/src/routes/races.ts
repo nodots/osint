@@ -67,11 +67,25 @@ racesRouter.get("/", async (_req, res, next) => {
 });
 
 // GET /api/elections/races/:districtId — race intelligence for one district
-// ("TX-34"): summary, full assessment history, and related events.
+// ("TX-34"): summary, candidates, forecast snapshots, full assessment
+// history, related events, and active litigation (spec §22).
 racesRouter.get("/:districtId", async (req, res, next) => {
   try {
-    const raceResult = await pool.query<RaceSummaryRow>(
-      `${RACE_SUMMARY_SQL} WHERE r.district_id = $1`,
+    const raceResult = await pool.query<
+      RaceSummaryRow & {
+        current_member: string | null;
+        cook_pvi: string | null;
+        democratic_candidate: string | null;
+        republican_candidate: string | null;
+        projected_margin: number | null;
+        rating_updated_at: Date | null;
+      }
+    >(
+      `${RACE_SUMMARY_SQL.replace(
+        "SELECT ",
+        `SELECT d.current_member, d.cook_pvi, r.democratic_candidate,
+                r.republican_candidate, r.projected_margin, r.rating_updated_at, `,
+      )} WHERE r.district_id = $1`,
       [req.params.districtId],
     );
     const race = raceResult.rows[0];
@@ -79,26 +93,96 @@ racesRouter.get("/:districtId", async (req, res, next) => {
       res.status(404).json({ error: "race not found" });
       return;
     }
-    const [historyResult, eventsResult] = await Promise.all([
-      pool.query(
-        `SELECT * FROM race_risk_assessments
-          WHERE race_id = $1 ORDER BY assessed_at DESC`,
-        [race.id],
-      ),
-      pool.query(
-        `SELECT id, occurred_at, title, summary, event_types,
-                jurisdiction_type, jurisdictions, factual_status,
-                operational_status, confidence, affected_race_ids
-           FROM events
-          WHERE $1 = ANY(affected_race_ids)
-          ORDER BY occurred_at DESC`,
-        [race.id],
-      ),
-    ]);
+    const [forecastResult, historyResult, eventsResult, casesResult] =
+      await Promise.all([
+        pool.query(
+          `SELECT source, snapshot_date, rating, margin
+             FROM forecast_snapshots
+            WHERE race_id = $1
+            ORDER BY snapshot_date DESC, source`,
+          [race.id],
+        ),
+        pool.query(
+          `SELECT * FROM race_risk_assessments
+            WHERE race_id = $1 ORDER BY assessed_at DESC`,
+          [race.id],
+        ),
+        pool.query(
+          `SELECT id, occurred_at, title, summary, event_types,
+                  jurisdiction_type, jurisdictions, factual_status,
+                  operational_status, confidence, affected_race_ids
+             FROM events
+            WHERE $1 = ANY(affected_race_ids)
+            ORDER BY occurred_at DESC`,
+          [race.id],
+        ),
+        pool.query(
+          `SELECT id, name, docket_number, court, jurisdiction, filed_at,
+                  status, affected_mechanisms
+             FROM cases
+            WHERE $1 = ANY(affected_race_ids)
+            ORDER BY filed_at DESC NULLS LAST`,
+          [race.id],
+        ),
+      ]);
     res.json({
       race: toSummary(race),
-      assessments: historyResult.rows,
-      events: eventsResult.rows,
+      currentMember: race.current_member,
+      cookPvi: race.cook_pvi,
+      democraticCandidate: race.democratic_candidate,
+      republicanCandidate: race.republican_candidate,
+      projectedMargin: race.projected_margin,
+      ratingUpdatedAt: race.rating_updated_at?.toISOString() ?? null,
+      forecasts: forecastResult.rows.map((f) => ({
+        source: f.source,
+        snapshotDate: f.snapshot_date,
+        rating: f.rating,
+        margin: f.margin,
+      })),
+      assessments: historyResult.rows.map((a) => ({
+        id: a.id,
+        assessedAt: a.assessed_at.toISOString(),
+        competitiveness: Number(a.competitiveness),
+        pivotality: Number(a.pivotality),
+        federalLeverage: Number(a.federal_leverage),
+        stateCooperation: Number(a.state_cooperation),
+        administrativeExposure: Number(a.administrative_exposure),
+        voterRollExposure: Number(a.voter_roll_exposure),
+        ballotExposure: Number(a.ballot_exposure),
+        litigationExposure: Number(a.litigation_exposure),
+        certificationExposure: Number(a.certification_exposure),
+        recountExposure: Number(a.recount_exposure),
+        congressionalContestExposure: Number(a.congressional_contest_exposure),
+        processVulnerability: Number(a.process_vulnerability),
+        subversionRisk: Number(a.subversion_risk),
+        confidence: Number(a.confidence),
+        explanations: a.explanations,
+        triggeringEventIds: a.triggering_event_ids,
+        methodologyVersion: a.methodology_version,
+      })),
+      events: eventsResult.rows.map((e) => ({
+        id: e.id,
+        occurredAt: e.occurred_at.toISOString(),
+        title: e.title,
+        summary: e.summary,
+        eventTypes: e.event_types,
+        jurisdictionType: e.jurisdiction_type,
+        jurisdictions: e.jurisdictions,
+        factualStatus: e.factual_status,
+        operationalStatus: e.operational_status,
+        confidence: Number(e.confidence),
+        affectedRaceIds: e.affected_race_ids,
+      })),
+      cases: casesResult.rows.map((c) => ({
+        id: c.id,
+        name: c.name,
+        docketNumber: c.docket_number,
+        court: c.court,
+        jurisdiction: c.jurisdiction,
+        filedAt: c.filed_at,
+        status: c.status,
+        affectedMechanisms: c.affected_mechanisms,
+      })),
     });
   } catch (err) {
     next(err);

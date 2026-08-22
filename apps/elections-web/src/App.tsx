@@ -9,6 +9,7 @@ import { EventsPage } from "./pages/EventsPage.js";
 import { MapPage } from "./pages/MapPage.js";
 import { MethodologyPage } from "./pages/MethodologyPage.js";
 import { OverviewPage } from "./pages/OverviewPage.js";
+import { RaceDetailPage } from "./pages/RaceDetailPage.js";
 import { RacesPage } from "./pages/RacesPage.js";
 
 const NAV = [
@@ -51,6 +52,7 @@ export function App() {
           <Route path="/overview" element={<OverviewPage />} />
           <Route path="/map" element={<MapPage />} />
           <Route path="/races" element={<RacesPage />} />
+          <Route path="/races/:districtId" element={<RaceDetailPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/methodology" element={<MethodologyPage />} />
           <Route path="*" element={<Navigate to="/overview" replace />} />

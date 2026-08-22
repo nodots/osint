@@ -1,6 +1,7 @@
 import type {
   ElectionEventSummary,
   HouseControlSummary,
+  RaceDetail,
   RaceSummary,
 } from "@elections-tracker/shared";
 
@@ -30,6 +31,13 @@ export function fetchHouseControl(signal?: AbortSignal) {
 
 export function fetchRaces(signal?: AbortSignal) {
   return request<RaceSummary[]>("/races", signal);
+}
+
+export function fetchRaceDetail(districtId: string, signal?: AbortSignal) {
+  return request<RaceDetail>(
+    `/races/${encodeURIComponent(districtId)}`,
+    signal,
+  );
 }
 
 export interface DistrictFeatureProperties {

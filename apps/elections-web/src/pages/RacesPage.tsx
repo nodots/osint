@@ -6,11 +6,14 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import type { RaceSummary } from "@elections-tracker/shared";
 import { useEffect, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { fetchRaces } from "../api.js";
+import { ratingLabel } from "../format.js";
 
 function pct(value: number | null): string {
   return value == null ? "—" : `${Math.round(value * 100)}`;
@@ -58,9 +61,13 @@ export function RacesPage() {
         <TableBody>
           {races.map((race) => (
             <TableRow key={race.id} hover>
-              <TableCell>{race.displayName}</TableCell>
+              <TableCell>
+                <Link component={RouterLink} to={`/races/${race.districtId}`}>
+                  {race.displayName}
+                </Link>
+              </TableCell>
               <TableCell>{race.incumbentParty ?? "—"}</TableCell>
-              <TableCell>{race.rating ?? "—"}</TableCell>
+              <TableCell>{ratingLabel(race.rating)}</TableCell>
               <TableCell align="right">{pct(race.processVulnerability)}</TableCell>
               <TableCell align="right">{pct(race.pivotality)}</TableCell>
               <TableCell align="right">{pct(race.subversionRisk)}</TableCell>

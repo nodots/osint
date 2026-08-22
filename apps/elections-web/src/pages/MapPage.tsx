@@ -4,12 +4,14 @@ import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
+import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
   fetchDistrictsGeoJSON,
   type DistrictFeatureProperties,
@@ -209,6 +211,10 @@ export function MapPage() {
                     ).toFixed(1)}`
               }
             />
+            <Divider sx={{ my: 1.5 }} />
+            <Link component={RouterLink} to={`/races/${selected.id}`}>
+              Full race intelligence →
+            </Link>
           </Box>
         )}
       </Drawer>

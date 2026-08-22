@@ -161,3 +161,59 @@ export interface ElectionEventSummary {
   confidence: number;
   affectedRaceIds: number[];
 }
+
+export interface ForecastSnapshot {
+  source: string;
+  snapshotDate: string; // "YYYY-MM-DD"
+  rating: string | null;
+  margin: number | null;
+}
+
+// One row of the append-only risk history, normalized to numbers.
+export interface RiskAssessment {
+  id: number;
+  assessedAt: string;
+  competitiveness: number;
+  pivotality: number;
+  federalLeverage: number;
+  stateCooperation: number;
+  administrativeExposure: number;
+  voterRollExposure: number;
+  ballotExposure: number;
+  litigationExposure: number;
+  certificationExposure: number;
+  recountExposure: number;
+  congressionalContestExposure: number;
+  processVulnerability: number;
+  subversionRisk: number;
+  confidence: number;
+  explanations: unknown;
+  triggeringEventIds: number[];
+  methodologyVersion: string;
+}
+
+export interface CaseSummary {
+  id: number;
+  name: string;
+  docketNumber: string | null;
+  court: string | null;
+  jurisdiction: string | null;
+  filedAt: string | null;
+  status: string;
+  affectedMechanisms: string[];
+}
+
+// GET /races/:districtId — everything the race detail page renders (spec §22).
+export interface RaceDetail {
+  race: RaceSummary;
+  currentMember: string | null;
+  cookPvi: string | null;
+  democraticCandidate: string | null;
+  republicanCandidate: string | null;
+  projectedMargin: number | null;
+  ratingUpdatedAt: string | null;
+  forecasts: ForecastSnapshot[];
+  assessments: RiskAssessment[];
+  events: ElectionEventSummary[];
+  cases: CaseSummary[];
+}
