@@ -11,6 +11,7 @@
     "ingest": "tsx --env-file-if-exists=.env src/index.ts",
     "assess:backfill": "tsx --env-file-if-exists=.env src/backfill-assessments.ts",
     "baseline:compare": "tsx src/baseline-compare.ts",
+    "baseline:export": "tsx src/baseline-export.ts",
     "test": "vitest run"
   },
   "dependencies": {

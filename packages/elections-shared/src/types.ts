@@ -188,6 +188,7 @@ export interface RaceSummary {
   processVulnerability: number | null;
   institutionalResistance: number | null;
   activePressure: number | null;
+  litigationExposure: number | null;
   pivotality: number | null;
   // Public name for the stored subversion_risk column (see the methodology
   // glossary): the intervention-relevance index in [0,1].
