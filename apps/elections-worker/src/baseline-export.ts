@@ -110,7 +110,7 @@ for (const [cycle, day] of Object.entries(CYCLE_DAYS)) {
 
 const out = {
   generatedAt: new Date().toISOString().slice(0, 10),
-  methodologyVersion: "2026.09.3",
+  methodologyVersion: "2026.09.4",
   // 2026 recomputed without the state-legislation source (which cannot be
   // replayed historically) — the matched-sources number for cross-cycle claims.
   matchedSources2026: await sensitivity(),

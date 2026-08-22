@@ -1,6 +1,6 @@
 import type { EventType } from "@elections-tracker/shared";
 import { fetchWithRetry } from "../services/http.js";
-import type { SourceCase, SourceEvent } from "../services/ingest.js";
+import type { SourceCase, SourceEvent, StatusUpdate } from "../services/ingest.js";
 import { stateFromCourtId, usDate } from "./courtlistener.js";
 
 // CourtListener RECAP docket entries: injunction/TRO orders in voting cases
@@ -49,8 +49,16 @@ const DENY_RE = new RegExp(
   "i",
 );
 // Orders about filing mechanics never classify, whatever else they match.
+// Party names may sit between "motion" and its object ("Motion by Defendants
+// for Leave to..."), so the object is matched within a window, not adjacent.
 const MECHANICS_RE =
-  /motion (?:for|to) (?:leave|permission|extension|extend|seal|withdraw|substitute)|reply brief|amicus|scheduling|pro hac vice/i;
+  /motion [^.]{0,40}?(?:for|to) (?:leave|permission|extension|extend|seal|withdraw|substitute)|reply brief|amicus|scheduling|pro hac vice|notice of supplemental/i;
+// A stay of an injunction suspends it — the opposite of granting one — and
+// stay orders otherwise satisfy GRANT_RE ("granting Motion to stay
+// injunction"). Direction of a stay depends on which side sought it, which
+// the entry text alone can't say, so stays never classify.
+const STAY_RE =
+  /\bstay(?:s|ing|ed)?\b[^.]{0,60}(?:injunction|restraining order|tro\b)|(?:injunction|restraining order|tro\b)[^.]{0,40}\bstay(?:s|ing|ed)?\b|\bstay pending appeal\b/i;
 
 export type RulingDirection = "BLOCKS" | "DENIES";
 
@@ -62,29 +70,51 @@ const NATIONWIDE_RE = /nationwide|universal (?:injunction|relief)|applies? to al
 const FEDERAL_PARTY_RE =
   /\bunited states\b|\bu\.s\.\b|donald j\.? trump|homeland security|citizenship and immigration|postal service|social security administration|united states attorney general|election assistance commission|department of justice|department of defense/i;
 
+// 2026.09.4: an injunction runs against the defendant, so a federal party
+// on the plaintiff side of the caption must not nationalize the block
+// ("United States v. <state official>" cuts the other way). The flat party
+// list carries no roles, so it is consulted only when the caption's
+// plaintiff half is not itself the federal party.
 export function rulingScope(
   description: string,
   caseName: string,
   parties: string[],
 ): "US" | "STATE" {
   if (NATIONWIDE_RE.test(description)) return "US";
-  const partyText = `${caseName} ${parties.join(" ")}`;
-  return FEDERAL_PARTY_RE.test(partyText) ? "US" : "STATE";
+  const sides = caseName.split(/ v\.? /i);
+  if (sides.length >= 2) {
+    if (FEDERAL_PARTY_RE.test(sides.slice(1).join(" "))) return "US";
+    if (FEDERAL_PARTY_RE.test(sides[0]!)) return "STATE"; // federal plaintiff
+  }
+  return FEDERAL_PARTY_RE.test(parties.join(" ")) ? "US" : "STATE";
 }
 
 export function classifyRuling(description: string): RulingDirection | null {
   const text = description.replace(/\s+/g, " ");
-  if (MECHANICS_RE.test(text)) return null;
+  if (MECHANICS_RE.test(text) || STAY_RE.test(text)) return null;
   const grants = GRANT_RE.test(text);
   const denies = DENY_RE.test(text);
   if (grants === denies) return null; // neither, or contradictory — skip
   return grants ? "BLOCKS" : "DENIES";
 }
 
+// The same order often appears on several dockets (transfers,
+// consolidations, companion appeals) under lightly varying captions; the
+// entry text itself is identical. Key on the normalized text plus date.
+export function rulingDedupKey(description: string, entryDate: string): string {
+  return `${entryDate}|${description.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
+}
+
 export async function fetchVotingRulings(
   from: Date,
   maxPages = 10,
-): Promise<{ events: (SourceEvent & { caseKey: string })[]; cases: SourceCase[] }> {
+): Promise<{
+  events: (SourceEvent & { caseKey: string })[];
+  cases: SourceCase[];
+  // Lifecycle refresh input: previously ingested rulings expire when their
+  // docket terminates (an injunction merged into final judgment or mooted).
+  statusByExternalId: Map<string, StatusUpdate>;
+}> {
   const after = `${String(from.getUTCMonth() + 1).padStart(2, "0")}/${String(
     from.getUTCDate(),
   ).padStart(2, "0")}/${from.getUTCFullYear()}`;
@@ -116,10 +146,15 @@ export async function fetchVotingRulings(
 
   const events: (SourceEvent & { caseKey: string })[] = [];
   const cases: SourceCase[] = [];
+  const statusByExternalId = new Map<string, StatusUpdate>();
+  const seenRulings = new Set<string>();
   for (const docket of dockets) {
     if (!docket.docketNumber) continue;
     const state = stateFromCourtId(docket.court_id);
     const caseKey = `${docket.docketNumber}|${docket.court}`;
+    const expiredAt = docket.dateTerminated
+      ? `${docket.dateTerminated}T00:00:00Z`
+      : null;
     let docketHasRuling = false;
 
     for (const doc of docket.recap_documents ?? []) {
@@ -135,6 +170,13 @@ export async function fetchVotingRulings(
       ) {
         continue;
       }
+      const dedupKey = rulingDedupKey(doc.description, doc.entry_date_filed);
+      if (seenRulings.has(dedupKey)) continue;
+      seenRulings.add(dedupKey);
+      statusByExternalId.set(`rd:${doc.id}`, {
+        status: expiredAt ? "EXPIRED" : "ACTIVE",
+        expiredAt,
+      });
       docketHasRuling = true;
       const blocks = direction === "BLOCKS";
       const types: EventType[] = blocks
@@ -159,8 +201,11 @@ export async function fetchVotingRulings(
         title: `${blocks ? "Injunctive relief granted" : "Injunctive relief denied"} — ${docket.caseName} (${docket.court})`,
         summary: doc.description.replace(/\s+/g, " ").slice(0, 1000),
         factualStatus: "CONFIRMED",
-        operationalStatus: "ACTIVE",
+        operationalStatus:
+          expiredAt && new Date(expiredAt) <= new Date() ? "EXPIRED" : "ACTIVE",
         confidence: 0.85,
+        expiredAt,
+        inForceStatus: expiredAt ? "ACTIVE" : undefined,
         rawData: {
           url: `https://www.courtlistener.com${doc.absolute_url}`,
           courtId: docket.court_id,
@@ -178,9 +223,10 @@ export async function fetchVotingRulings(
         jurisdiction: state,
         filedAt: docket.dateFiled,
         terminated: docket.dateTerminated != null,
+        terminatedAt: docket.dateTerminated,
         affectedStates: state ? [state] : [],
       });
     }
   }
-  return { events, cases };
+  return { events, cases, statusByExternalId };
 }

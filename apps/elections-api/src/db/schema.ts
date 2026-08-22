@@ -141,6 +141,13 @@ export const events = pgTable(
     // Materiality gate (§24): immaterial events are stored intelligence but
     // never move risk signals.
     material: boolean("material").notNull().default(true),
+    // Point-in-time lifecycle (§43 backtesting): when the event left force
+    // (docket terminated, proposal superseded) and the status it held while
+    // in force. A replay resolves status as of the replay day from these;
+    // null expiredAt means the transition date is unknown and the stored
+    // status stands.
+    expiredAt: timestamp("expired_at", { withTimezone: true }),
+    inForceStatus: text("in_force_status"), // OperationalStatus
     rawData: jsonb("raw_data"),
     // Editorial trail (spec §32): no silent edits.
     enteredBy: text("entered_by"),
@@ -191,6 +198,10 @@ export const cases = pgTable("cases", {
   court: text("court"),
   jurisdiction: text("jurisdiction"),
   filedAt: date("filed_at"),
+  // Point-in-time lifecycle: the docket's termination date when the source
+  // reports one, so a replay can tell whether the case was live on a given
+  // historical day rather than trusting the current status.
+  terminatedAt: date("terminated_at"),
   status: text("status").notNull().default("ACTIVE"),
   plaintiffs: text("plaintiffs").array().notNull().default([]),
   defendants: text("defendants").array().notNull().default([]),

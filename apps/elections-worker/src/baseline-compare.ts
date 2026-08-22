@@ -9,9 +9,13 @@ pg.types.setTypeParser(DATE_OID, (v) => v);
 const HIGH_RISK = 0.12;
 const PIVOTAL = 0.1;
 const CONFIGS = [
+  { label: "2016", db: "elections_baseline_2016", electionDay: "2016-11-08" },
+  { label: "2018", db: "elections_baseline_2018", electionDay: "2018-11-06" },
+  { label: "2020", db: "elections_baseline_2020", electionDay: "2020-11-03" },
   { label: "2022", db: "elections_baseline_2022", electionDay: "2022-11-08" },
   { label: "2024", db: "elections_baseline_2024", electionDay: "2024-11-05" },
   { label: "2026", db: "elections_tracker", electionDay: "2026-11-03" },
+  { label: "2026-matched", db: "elections_sens_2026", electionDay: "2026-11-03" },
 ];
 
 for (const cfg of CONFIGS) {

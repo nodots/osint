@@ -146,3 +146,40 @@ hangs on — the status-maturity confound is.
 3. Classifier: stay handling, mechanics tightening, defendant-role scope; grow fixtures from the 2020 misclassifications.
 4. Delete `admin.ts`.
 5. Docket dedup for consolidated/transferred cases.
+
+---
+
+## Resolution (same day, methodology 2026.09.4)
+
+All five items were fixed and the backtest rerun end to end; the corrected
+report replaces `backtest-2016-2024.md`. Summary of what the fixes changed:
+
+- **Point-in-time statuses**: `expired_at`/`in_force_status` on events,
+  `terminated_at` on cases, captured at ingest and resolved per replay day
+  via `effectiveStatus()`; case queries filter by `filed_at` too. Residual
+  unknown-transition rows: <3% of cases per cycle. As a side effect,
+  injunctions now expire with their dockets in the live model as well
+  (previously they persisted as resistance forever — the "dead branch"
+  finding).
+- **Corrected numbers**: at ~73 days out — 2016: 0, 2018: 0, 2020: 56,
+  2022: 64, 2024: 80, 2026 matched: 80. The predicted direction of the bias
+  was confirmed and its size exceeded the review's upper-bound
+  counterfactual. "2026 is anomalous" is withdrawn; 2026 reads level with
+  2024 at the same point in the cycle.
+- **Classifier**: stays and broader mechanics skip; federal plaintiffs no
+  longer nationalize; batch dedup on normalized entry text; a
+  `reclassify:rulings` maintenance pass applied the fixes to stored rows
+  (74 unclassifiable, 48 duplicates across five baselines — marked
+  immaterial, not deleted). New unit fixtures from the 2020
+  misclassifications; 27 tests pass.
+- **`admin.ts` deleted** along with `multiplicativeRisk`; the projection
+  query got its missing cycle filter.
+- **The 2016/2018 zeros are now understood**: blowout-projected majorities
+  (244R/245R) clamp national tightness to 0, zeroing pivotality — the
+  multiplicative design, not signal discrimination. 2020/2022 use the 0.5
+  tightness fallback (incomplete projections: 434/435 and 427/435 seats).
+
+Open decision for the owner: the threat scale (`controlThreat` HIGH at ≥3
+high-risk pivotal races) was calibrated against the biased zero baselines;
+under corrected replays every cycle since 2020 reads HIGH throughout.
+Recalibration options are in the backtest report.

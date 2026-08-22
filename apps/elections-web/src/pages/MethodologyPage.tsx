@@ -87,7 +87,12 @@ export function MethodologyPage() {
         (directives, data requests, investigations, filings) decay with a{" "}
         {PRESSURE_HALF_LIFE_DAYS}-day half-life. Nationwide events contribute
         at full weight to federal leverage and at {NATIONAL_SPILLOVER} to a
-        state&apos;s other dimensions.
+        state&apos;s other dimensions. Status is resolved as of the assessment
+        day from recorded transition dates — a docket&apos;s termination, a
+        rule&apos;s supersession — so an injunction expires with its case and
+        a historical replay sees each day&apos;s status of record, not
+        today&apos;s. Where no transition date is recorded, the current status
+        stands and the residual is reported with the backtest.
       </Typography>
       <Typography variant="body1">
         Blocked, enjoined, or overturned actions stop feeding vulnerability

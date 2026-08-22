@@ -19,7 +19,15 @@
 // the index is "intervention relevance", the aggregate is "threat to
 // legitimate House control"; "subversion" retired from all public surfaces
 // (the append-only subversion_risk column name is retained and documented).
-export const METHODOLOGY_VERSION = "2026.09.3";
+// 2026.09.4: point-in-time lifecycle — event and case status resolve as of
+// the assessment day from recorded transition dates (docket termination,
+// rule supersession) instead of the current status, removing look-ahead
+// bias from replays and letting injunctions expire with their dockets;
+// ruling classifier skips stays of injunctions and broader filing
+// mechanics; nationwide scope ignores federal parties on the plaintiff
+// side of the caption; identical orders on transferred or consolidated
+// dockets dedupe.
+export const METHODOLOGY_VERSION = "2026.09.4";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {
@@ -66,18 +74,4 @@ export function processVulnerability(dims: VulnerabilityDimensions): number {
     total += clamp01(dims[key]) * VULNERABILITY_WEIGHTS[key];
   }
   return clamp01(total);
-}
-
-// Pre-2026.09 multiplicative index (spec §9): Vulnerability ×
-// Competitiveness × Pivotality. Retained only for the legacy admin entry
-// route; the live model is interventionRelevance() in derivation.ts. The
-// multiplicative intuition still holds: a deeply vulnerable safe seat does
-// not matter, and a robust toss-up is hard to affect — the concern is the
-// vulnerable 50/50 district that decides seat 218.
-export function multiplicativeRisk(
-  vulnerability: number,
-  competitiveness: number,
-  pivotality: number,
-): number {
-  return clamp01(clamp01(vulnerability) * clamp01(competitiveness) * clamp01(pivotality));
 }

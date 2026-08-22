@@ -88,7 +88,7 @@ async function runCourtListener(from: Date, mode: string): Promise<void> {
 async function runCourtListenerRulings(from: Date, mode: string): Promise<void> {
   const runId = await startRun("events:courtlistener_rulings");
   try {
-    const { events, cases } = await fetchVotingRulings(
+    const { events, cases, statusByExternalId } = await fetchVotingRulings(
       from,
       mode === "daily" ? 5 : 30,
     );
@@ -99,6 +99,9 @@ async function runCourtListenerRulings(from: Date, mode: string): Promise<void> 
         relatedCaseId: caseCounts.ids.get(caseKey),
       })),
     );
+    // Rulings already ingested expire when their docket terminates — an
+    // injunction merged into final judgment stops counting as resistance.
+    await refreshOperationalStatus("courtlistener_rulings", statusByExternalId);
     await finishRun(runId, {
       status: "success",
       recordsSeen: eventCounts.seen,
@@ -176,7 +179,10 @@ async function runOpenStates(from: Date, mode: string): Promise<void> {
     const refreshed = await refreshOperationalStatus(
       "openstates",
       new Map(
-        events.map((e) => [e.externalId, e.operationalStatus as string]),
+        events.map((e) => [
+          e.externalId,
+          { status: e.operationalStatus as string, expiredAt: e.expiredAt },
+        ]),
       ),
     );
     await finishRun(runId, {

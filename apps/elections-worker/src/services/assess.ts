@@ -4,6 +4,7 @@ import {
   CASE_WEIGHT,
   DIMENSION_EVENT_TYPES,
   blendPressure,
+  effectiveStatus,
   METHODOLOGY_VERSION,
   NATIONAL_RESISTANCE_WEIGHT,
   NATIONAL_SPILLOVER,
@@ -42,6 +43,8 @@ interface EventRow {
   jurisdictions: string[];
   event_types: string[];
   operational_status: string;
+  expired_at: Date | null;
+  in_force_status: string | null;
   affected_race_ids: number[];
 }
 
@@ -118,15 +121,26 @@ export async function runAssessments(
     pool.query<EventRow>(
       // The upper bound makes the pass point-in-time: an as-of date in the
       // past recomputes that day's assessment (retrodiction — labeled in
-      // explanations; current lifecycle status stands in for the status of
-      // record on that day).
+      // explanations). Status is resolved as of that day too, via
+      // effectiveStatus() over the recorded transition dates; only events
+      // with no known transition date fall back to their current status.
       `SELECT id, occurred_at, jurisdictions, event_types, operational_status,
-              affected_race_ids
+              expired_at, in_force_status, affected_race_ids
          FROM events WHERE occurred_at >= $1 AND occurred_at <= $2 AND material`,
       [since, now],
     ),
-    pool.query<{ jurisdiction: string | null; status: string }>(
-      `SELECT jurisdiction, status FROM cases`,
+    pool.query<{
+      jurisdiction: string | null;
+      status: string;
+      filed_at: string | null;
+      terminated_at: string | null;
+    }>(
+      // Point-in-time in both directions: a case filed after the as-of day
+      // does not exist yet, and one whose recorded termination is after the
+      // as-of day was still live then.
+      `SELECT jurisdiction, status, filed_at::text, terminated_at::text
+         FROM cases WHERE filed_at IS NULL OR filed_at <= $1`,
+      [now],
     ),
     pool.query<{
       id: number;
@@ -141,11 +155,13 @@ export async function runAssessments(
         WHERE e.election_type = 'HOUSE' AND e.cycle = ${ELECTION_CYCLE}`,
     ),
     pool.query<{ dem: number; rep: number }>(
-      `SELECT count(*) FILTER (WHERE projected_margin > 0
-                               OR (projected_margin = 0 AND incumbent_party = 'D'))::int AS dem,
-              count(*) FILTER (WHERE projected_margin < 0
-                               OR (projected_margin = 0 AND incumbent_party = 'R'))::int AS rep
-         FROM races`,
+      `SELECT count(*) FILTER (WHERE r.projected_margin > 0
+                               OR (r.projected_margin = 0 AND r.incumbent_party = 'D'))::int AS dem,
+              count(*) FILTER (WHERE r.projected_margin < 0
+                               OR (r.projected_margin = 0 AND r.incumbent_party = 'R'))::int AS rep
+         FROM races r
+         JOIN elections e ON e.id = r.election_id
+        WHERE e.election_type = 'HOUSE' AND e.cycle = ${ELECTION_CYCLE}`,
     ),
   ]);
 
@@ -168,7 +184,12 @@ export async function runAssessments(
   for (const event of events.rows) {
     const ageDays = (now.getTime() - event.occurred_at.getTime()) / 86400000;
     const types = event.event_types as EventType[];
-    const status = event.operational_status as OperationalStatus;
+    const status = effectiveStatus(
+      event.operational_status as OperationalStatus,
+      event.in_force_status as OperationalStatus | null,
+      event.expired_at,
+      now,
+    );
     const disposition = eventDisposition(types, status, ageDays);
     if (disposition.kind === "expired") continue;
     const dims = dimensionsForEvent(event.event_types);
@@ -237,10 +258,15 @@ export async function runAssessments(
     }
   }
 
+  const asOfDay = now.toISOString().slice(0, 10);
   for (const c of cases.rows) {
     if (!c.jurisdiction || !allStates.has(c.jurisdiction)) continue;
     const acc = accFor(c.jurisdiction);
-    if (c.status === "ACTIVE") {
+    // Live as of the assessment day: a recorded termination date decides;
+    // without one, the current status stands (unknown transition date).
+    const live =
+      c.terminated_at != null ? c.terminated_at > asOfDay : c.status === "ACTIVE";
+    if (live) {
       acc.vuln.litigationExposure += CASE_WEIGHT;
       acc.pressure += CASE_PRESSURE_WEIGHT;
     }

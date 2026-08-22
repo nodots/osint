@@ -101,11 +101,8 @@ function BaselineChart({
             )}
           </g>
         )}
-        <text x={x(80)} y={y(0) - 12} fill="rgba(255,255,255,0.55)" fontSize={12}>
-          2016–2022 · zero the entire 100 days, four cycles running
-        </text>
-        <text x={x(22)} y={y(3) - 10} fill={C2024} fontSize={12}>
-          2024 · 3, final 48 hours only
+        <text x={x(80)} y={y(2) - 12} fill="rgba(255,255,255,0.55)" fontSize={12}>
+          2016–2018 · zero throughout — blowout-projected majorities zero the pivotality term
         </text>
         <text x={padLeft} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11}>105 days out</text>
         <text x={x(50)} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11} textAnchor="middle">50 days out</text>
@@ -179,6 +176,20 @@ export function BaselinePage() {
   }));
   const last = live[live.length - 1];
   const matched = baselines.matchedSources2026;
+  // Each baseline's count at the same distance from election day as the
+  // live series' latest point — the only honest cross-cycle comparison.
+  const atSameDte = (cycle: keyof typeof baselines.cycles): number | null => {
+    if (!last) return null;
+    const series = baselines.cycles[cycle].series as Pt[];
+    const pt = series.reduce<Pt | null>(
+      (best, p) =>
+        best == null || Math.abs(p.dte - last.dte) < Math.abs(best.dte - last.dte)
+          ? p
+          : best,
+      null,
+    );
+    return pt?.hrp ?? null;
+  };
 
   const mean = (pick: (r: RaceSummary) => number | null) => {
     const vals = races.map(pick).filter((v): v is number => v != null);
@@ -203,7 +214,7 @@ export function BaselinePage() {
             <BaselineChart live={live} matched={matched} />
             <Typography variant="caption" color="text.secondary">
               the count the threat level is defined on (intervention relevance ≥ 12 and
-              pivotality ≥ 10) · 2022/2024 are 100-day replays ending on their election
+              pivotality ≥ 10) · 2016–2024 are 100-day replays ending on their election
               days; 2026 is the live series so far
             </Typography>
           </Paper>
@@ -214,23 +225,28 @@ export function BaselinePage() {
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Stack spacing={1.25}>
                 <Typography variant="overline" color="text.secondary">
-                  The finding
+                  The finding · {last?.dte ?? "—"} days out
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.55 }}>
-                  Run against five cycles, quiet and turbulent alike, this model
-                  stays at zero. At the same distance from election day, on
-                  identical sources, no prior cycle had reached the state 2026 is
-                  in now.
+                  On identical sources at the same distance from election day,
+                  2026 sits at the top of the recent-cycle range — level with
+                  2024, above 2020 and 2022 — not outside it. Recent litigious
+                  cycles read high here; that is the model registering live
+                  election litigation, not a verdict of subversion.
                 </Typography>
                 <Stack direction="row" spacing={2.5} flexWrap="wrap" useFlexGap>
                   {(["2016", "2018", "2020", "2022"] as const).map((c) => (
                     <Stack key={c}>
-                      <Typography variant="h4" sx={{ fontWeight: 300, color: C2022 }}>0</Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 300, color: C2022 }}>
+                        {atSameDte(c) ?? "—"}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">{c}</Typography>
                     </Stack>
                   ))}
                   <Stack>
-                    <Typography variant="h4" sx={{ fontWeight: 300, color: C2024 }}>0</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 300, color: C2024 }}>
+                      {atSameDte("2024") ?? "—"}
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">2024</Typography>
                   </Stack>
                   <Stack>
@@ -250,17 +266,20 @@ export function BaselinePage() {
 
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Typography variant="overline" color="text.secondary">
-                Not a volume artifact
+                What changed in this backtest
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.55 }}>
-                Past cycles produced{" "}
-                <Box component="span" sx={{ color: "text.primary" }}>more</Box>{" "}
-                voting litigation in absolute terms — 2020 alone had{" "}
+                An earlier run of this backtest read every prior cycle at zero.
+                That was look-ahead bias: replays judged each case by its
+                current status, so litigation that later ended was invisible on
+                the historical days it was live. With status resolved as of
+                each replay day (methodology 2026.09.4), litigious cycles read
+                as litigious — 2020 had{" "}
                 {baselines.cycles["2020"].volumes.dockets} dockets and{" "}
                 {baselines.cycles["2020"].volumes.blockingInjunctions} blocking
-                injunctions, and still read zero: record activity met record
-                judicial resistance, and the model scored the courts holding. The
-                2026 elevation is compositional, not source growth.
+                injunctions and now shows it. The correction replaced the
+                earlier &quot;no prior cycle comes close&quot; finding with the
+                comparison shown here.
               </Typography>
             </Paper>
           </Stack>
@@ -301,11 +320,14 @@ export function BaselinePage() {
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.6 }}>
               Baselines are retrodictions: history recomputed under today&apos;s
-              methodology from event occurrence dates, with current case status
-              standing in for the status of record. State legislation cannot be
-              replayed and is excluded from comparisons. State-court and county
-              incidents are under-covered in every cycle, RECAP&apos;s coverage
-              thins before ~2018, and the injunction-as-resistance reading is
+              methodology from event occurrence dates, with status resolved as
+              of each replay day from recorded transition dates (a small
+              residual — under 3% of cases — has no recorded date and keeps its
+              current status). State legislation cannot be replayed and is
+              excluded from comparisons. State-court and county incidents are
+              under-covered in every cycle, RECAP&apos;s coverage thins before
+              ~2018 and grows since, the high-risk cutoff is a fixed constant
+              many races sit near, and the injunction-as-resistance reading is
               direction-blind — in 2020 courts blocked both restrictions and
               expansions, and the model counts both as resistance.
             </Typography>

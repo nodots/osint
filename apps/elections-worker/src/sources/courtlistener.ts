@@ -1,4 +1,4 @@
-import type { SourceCase, SourceEvent } from "../services/ingest.js";
+import type { SourceCase, SourceEvent, StatusUpdate } from "../services/ingest.js";
 import { fetchWithRetry } from "../services/http.js";
 
 // CourtListener (Free Law Project) RECAP search — federal dockets with
@@ -41,8 +41,9 @@ export interface VotingDocketBatch {
   // link related_case_id after the case upsert.
   events: (SourceEvent & { caseKey: string })[];
   cases: SourceCase[];
-  // Lifecycle refresh input: docket id -> current operational status.
-  statusByExternalId: Map<string, string>;
+  // Lifecycle refresh input: docket id -> current operational status, with
+  // the termination date so the point-in-time replay knows when it changed.
+  statusByExternalId: Map<string, StatusUpdate>;
 }
 
 export async function fetchVotingDockets(
@@ -81,15 +82,18 @@ export async function fetchVotingDockets(
 
   const events: (SourceEvent & { caseKey: string })[] = [];
   const cases: SourceCase[] = [];
-  const statusByExternalId = new Map<string, string>();
+  const statusByExternalId = new Map<string, StatusUpdate>();
   for (const r of results) {
     if (!r.docketNumber) continue;
     const state = stateFromCourtId(r.court_id);
     const parties = (r.party ?? []).slice(0, 6).join(", ");
-    statusByExternalId.set(
-      String(r.docket_id),
-      r.dateTerminated ? "EXPIRED" : "ACTIVE",
-    );
+    const expiredAt = r.dateTerminated
+      ? `${r.dateTerminated}T00:00:00Z`
+      : null;
+    statusByExternalId.set(String(r.docket_id), {
+      status: r.dateTerminated ? "EXPIRED" : "ACTIVE",
+      expiredAt,
+    });
     cases.push({
       name: r.caseName,
       docketNumber: r.docketNumber,
@@ -97,6 +101,7 @@ export async function fetchVotingDockets(
       jurisdiction: state,
       filedAt: r.dateFiled,
       terminated: r.dateTerminated != null,
+      terminatedAt: r.dateTerminated,
       affectedStates: state ? [state] : [],
     });
     events.push({
@@ -115,6 +120,8 @@ export async function fetchVotingDockets(
       factualStatus: "CONFIRMED",
       operationalStatus: r.dateTerminated ? "EXPIRED" : "ACTIVE",
       confidence: 0.9,
+      expiredAt,
+      inForceStatus: r.dateTerminated ? "ACTIVE" : undefined,
       rawData: {
         url: `https://www.courtlistener.com${r.docket_absolute_url}`,
         courtId: r.court_id,

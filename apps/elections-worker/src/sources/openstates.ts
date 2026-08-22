@@ -144,6 +144,17 @@ export async function fetchElectionBills(
       operationalStatus: billStatus(bill.latest_action_description),
       confidence: 0.85,
       material: true,
+      // A bill observed in a terminal state left force on its latest-action
+      // date — the closest the update feed comes to a transition date.
+      expiredAt:
+        billStatus(bill.latest_action_description) === "EXPIRED" &&
+        bill.latest_action_date
+          ? `${bill.latest_action_date.slice(0, 10)}T00:00:00Z`
+          : null,
+      inForceStatus:
+        billStatus(bill.latest_action_description) === "EXPIRED"
+          ? "PROPOSED"
+          : undefined,
       rawData: {
         url: bill.openstates_url,
         matchedQuery: matched,

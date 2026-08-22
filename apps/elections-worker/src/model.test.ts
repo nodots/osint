@@ -7,8 +7,10 @@ import {
   processVulnerability,
   type VulnerabilityDimensions,
 } from "@elections-tracker/shared";
+import { effectiveStatus } from "@elections-tracker/shared";
 import {
   classifyRuling,
+  rulingDedupKey,
   rulingScope,
 } from "./sources/courtlistener-rulings.js";
 
@@ -58,6 +60,45 @@ describe("ruling classifier (§13 — do not count lawsuits equally)", () => {
       ),
     ).toBeNull();
   });
+
+  // Fixtures below are real 2020-cycle entries the pre-2026.09.4 classifier
+  // got wrong (critical-review-2026-08-22.md).
+  it("never classifies stays of injunctions — a stay is not a block (Middleton)", () => {
+    expect(
+      classifyRuling(
+        "COURT ORDER filed granting Motion to stay injunction pending appeal and for administrative stay",
+      ),
+    ).toBeNull();
+    expect(
+      classifyRuling(
+        "ORDER re: 1. Wisconsin Legislature's Emergency Motion to Stay the Preliminary Injunction",
+      ),
+    ).toBeNull();
+  });
+
+  it("skips leave-to-file orders with party names in the middle (DeJoy)", () => {
+    expect(
+      classifyRuling(
+        "ORDER granting Defendants' Unopposed Motion by Defendants for Leave to Submit Brief regarding the preliminary injunction",
+      ),
+    ).toBeNull();
+    expect(
+      classifyRuling(
+        "NOTICE of Supplemental Authorities re: 26 Reply to Response to Motion for TRO",
+      ),
+    ).toBeNull();
+  });
+
+  it("dedupes the same order across transferred dockets (Wise)", () => {
+    const text =
+      "ORDER granting 3 Motion for Temporary Restraining Order and transferring case";
+    expect(rulingDedupKey(text, "2020-09-10")).toBe(
+      rulingDedupKey(`ORDER  granting 3 Motion for Temporary  Restraining Order and transferring case.`, "2020-09-10"),
+    );
+    expect(rulingDedupKey(text, "2020-09-10")).not.toBe(
+      rulingDedupKey(text, "2020-09-11"),
+    );
+  });
 });
 
 describe("injunction scope (nationwide vs issuing-court state)", () => {
@@ -89,6 +130,69 @@ describe("injunction scope (nationwide vs issuing-court state)", () => {
         ["Count Us In", "Diego Morales, Indiana Secretary of State"],
       ),
     ).toBe("STATE");
+  });
+
+  it("does not nationalize a federal plaintiff — the Griswold pattern", () => {
+    expect(
+      rulingScope(
+        "ORDER GRANTING PLAINTIFF'S MOTION FOR PRELIMINARY INJUNCTION",
+        "United States v. Griswold",
+        ["United States of America", "Griswold"],
+      ),
+    ).toBe("STATE");
+    expect(
+      rulingScope(
+        "DECISION AND ORDER: granting in part Motion for Preliminary Injunction",
+        "United States v. Cruz",
+        [],
+      ),
+    ).toBe("STATE");
+  });
+
+  it("still nationalizes a federal defendant found via the party list", () => {
+    // Caption alone is inconclusive ("DeJoy"), the party list is not.
+    expect(
+      rulingScope(
+        "ORDER granting 8 Motion for TRO",
+        "State of Colorado v. DeJoy",
+        ["State of Colorado", "United States Postal Service", "Louis DeJoy"],
+      ),
+    ).toBe("US");
+    expect(
+      rulingScope(
+        "DECISION AND ORDER: granting in part Motion for Preliminary Injunction",
+        "Jones v. United States Postal Service",
+        [],
+      ),
+    ).toBe("US");
+  });
+});
+
+describe("point-in-time status (§43 — no look-ahead in replays)", () => {
+  const aug = new Date("2020-08-22T12:00:00Z");
+  it("reads a docket terminated in December as live in August", () => {
+    expect(
+      effectiveStatus("EXPIRED", "ACTIVE", new Date("2020-12-15T00:00:00Z"), aug),
+    ).toBe("ACTIVE");
+  });
+  it("reads it as expired after the termination date", () => {
+    expect(
+      effectiveStatus(
+        "EXPIRED",
+        "ACTIVE",
+        new Date("2020-12-15T00:00:00Z"),
+        new Date("2021-01-05T12:00:00Z"),
+      ),
+    ).toBe("EXPIRED");
+  });
+  it("restores the in-force status a proposal held before supersession", () => {
+    expect(
+      effectiveStatus("EXPIRED", "PROPOSED", new Date("2020-10-01T00:00:00Z"), aug),
+    ).toBe("PROPOSED");
+  });
+  it("falls back to the stored status when the transition date is unknown", () => {
+    expect(effectiveStatus("EXPIRED", null, null, aug)).toBe("EXPIRED");
+    expect(effectiveStatus("ACTIVE", null, null, aug)).toBe("ACTIVE");
   });
 });
 

@@ -149,6 +149,24 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+// Point-in-time status resolution (2026.09.4, §43): stored status is the
+// CURRENT one, which leaks future knowledge into a historical replay — a
+// docket that terminated in December must still read as live in August.
+// When the transition date is known (expiredAt), the status as of any day
+// follows from it; when it is not, the stored status stands (documented
+// residual bias, measured per cycle in the backtest report).
+export function effectiveStatus(
+  stored: OperationalStatus,
+  inForce: OperationalStatus | null,
+  expiredAt: Date | null,
+  asOf: Date,
+): OperationalStatus {
+  if (expiredAt == null) return stored;
+  return expiredAt.getTime() <= asOf.getTime()
+    ? "EXPIRED"
+    : (inForce ?? "ACTIVE");
+}
+
 export type EventDisposition =
   | { kind: "vulnerability"; weight: number }
   | { kind: "resistance"; weight: number }

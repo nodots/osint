@@ -25,6 +25,11 @@ export interface SourceEvent {
   // Materiality gate (§24): immaterial events are stored but never move risk.
   material: boolean;
   relatedCaseId?: number;
+  // Point-in-time lifecycle (§43): when the event left force (docket
+  // terminated, rule superseded) and the status it held while in force, so a
+  // historical replay can resolve status as of the replay day.
+  expiredAt?: string | null; // ISO date
+  inForceStatus?: OperationalStatus;
   rawData: Record<string, unknown>;
 }
 
@@ -103,8 +108,9 @@ export async function insertEvents(
       `INSERT INTO events (occurred_at, jurisdiction_type, jurisdictions,
                            event_types, title, summary, factual_status,
                            operational_status, confidence, material,
-                           related_case_id, raw_data, entered_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                           related_case_id, expired_at, in_force_status,
+                           raw_data, entered_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING id`,
       [
         event.occurredAt,
@@ -118,6 +124,8 @@ export async function insertEvents(
         event.confidence,
         event.material,
         event.relatedCaseId ?? null,
+        event.expiredAt ?? null,
+        event.inForceStatus ?? null,
         JSON.stringify({
           source: event.source,
           externalId: event.externalId,
@@ -149,6 +157,7 @@ export interface SourceCase {
   jurisdiction: string | null;
   filedAt: string | null; // "YYYY-MM-DD"
   terminated: boolean;
+  terminatedAt: string | null; // "YYYY-MM-DD" when the source reports one
   affectedStates: string[];
 }
 
@@ -168,17 +177,17 @@ export async function upsertCases(
   for (const c of cases) {
     const status = c.terminated ? "CLOSED" : "ACTIVE";
     const updated = await pool.query(
-      `UPDATE cases SET status = $3, name = $4
+      `UPDATE cases SET status = $3, name = $4, terminated_at = $5
         WHERE docket_number = $1 AND court = $2
         RETURNING id`,
-      [c.docketNumber, c.court, status, c.name],
+      [c.docketNumber, c.court, status, c.name, c.terminatedAt],
     );
     let id: number;
     if (updated.rowCount === 0) {
       const insertedRow = await pool.query(
         `INSERT INTO cases (name, docket_number, court, jurisdiction, filed_at,
-                            status, affected_states)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+                            status, terminated_at, affected_states)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id`,
         [
           c.name,
@@ -187,6 +196,7 @@ export async function upsertCases(
           c.jurisdiction,
           c.filedAt,
           status,
+          c.terminatedAt,
           c.affectedStates,
         ],
       );
@@ -217,15 +227,16 @@ export async function linkFinalRules(source: string): Promise<number> {
         AND proposal.raw_data->>'documentType' = 'Proposed Rule'
         AND lower(trim(final.title)) = lower(trim(proposal.title))
         AND proposal.occurred_at < final.occurred_at
-      RETURNING final.id, proposal.id AS proposal_id`,
+      RETURNING final.id, final.occurred_at AS final_at, proposal.id AS proposal_id`,
     [source],
   );
   for (const row of linked.rows) {
     await pool.query(
       `UPDATE events SET operational_status = 'EXPIRED', updated_at = now(),
+              expired_at = $3, in_force_status = 'PROPOSED',
               last_modified_by = $2
         WHERE id = $1 AND operational_status = 'PROPOSED'`,
-      [row.proposal_id, `worker:${source}`],
+      [row.proposal_id, `worker:${source}`, row.final_at],
     );
   }
   return linked.rowCount ?? 0;
@@ -234,18 +245,38 @@ export async function linkFinalRules(source: string): Promise<number> {
 // Lifecycle refresh (§25): when a source reports an event's operational
 // status changed (e.g. a docket terminated), update the existing row rather
 // than inserting a duplicate.
+export interface StatusUpdate {
+  status: string;
+  expiredAt?: string | null; // ISO date when the status left force is known
+}
+
 export async function refreshOperationalStatus(
   source: string,
-  statusByExternalId: Map<string, string>,
+  statusByExternalId: Map<string, StatusUpdate>,
 ): Promise<number> {
   let updated = 0;
-  for (const [externalId, status] of statusByExternalId) {
+  for (const [externalId, next] of statusByExternalId) {
+    // in_force_status captures the status the row held before its first
+    // transition to a terminal state; expired_at records when — both feed
+    // the point-in-time replay (§43).
     const result = await pool.query(
       `UPDATE events SET operational_status = $3, updated_at = now(),
+              expired_at = COALESCE($5, expired_at),
+              in_force_status = CASE
+                WHEN $3 IN ('EXPIRED','SUPERSEDED','BLOCKED','ENJOINED','OVERTURNED')
+                     AND in_force_status IS NULL
+                -- A row that is already terminal can't tell us what it was
+                -- before; ACTIVE is the in-force status for every source
+                -- that reaches this path already expired (court dockets).
+                THEN CASE
+                  WHEN operational_status IN ('EXPIRED','SUPERSEDED','BLOCKED','ENJOINED','OVERTURNED')
+                  THEN 'ACTIVE' ELSE operational_status END
+                ELSE in_force_status END,
               last_modified_by = $4
         WHERE raw_data->>'source' = $1 AND raw_data->>'externalId' = $2
-          AND operational_status <> $3`,
-      [source, externalId, status, `worker:${source}`],
+          AND (operational_status <> $3
+               OR ($5::timestamptz IS NOT NULL AND expired_at IS DISTINCT FROM $5::timestamptz))`,
+      [source, externalId, next.status, `worker:${source}`, next.expiredAt ?? null],
     );
     updated += result.rowCount ?? 0;
   }
