@@ -2,8 +2,12 @@ import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import {
+  CASE_WEIGHT,
+  HALF_LIFE_DAYS,
   METHODOLOGY_VERSION,
+  NATIONAL_SPILLOVER,
   RATINGS_VERSION,
+  SATURATION_K,
   VULNERABILITY_WEIGHTS,
 } from "@elections-tracker/shared";
 
@@ -14,10 +18,10 @@ export function MethodologyPage() {
         Methodology {METHODOLOGY_VERSION}
       </Typography>
       <Typography variant="body1">
-        Facts, claims, and assessments are different objects. Every published
-        risk score is computed deterministically from analyst-maintained
-        dimensions; every score change traces to specific events, and every
-        event traces to its sources.
+        Facts, claims, and assessments are different objects. Nothing here is
+        hand-entered: events are ingested from public sources, every risk
+        dimension is computed from those events by the published formula below,
+        and every score change traces to the specific events that moved it.
       </Typography>
       <Typography variant="body1">
         Process vulnerability is a weighted mean of nine dimensions, each
@@ -38,6 +42,31 @@ export function MethodologyPage() {
       <Typography variant="body2" color="text.secondary">
         Assessments store the methodology version they were computed under, so
         historical scores remain reproducible when weights change.
+      </Typography>
+
+      <Typography variant="h6" sx={{ fontWeight: 300 }}>
+        Dimension derivation
+      </Typography>
+      <Typography variant="body1">
+        Each dimension is a saturating function of the evidence behind it. An
+        event&apos;s weight decays with a {HALF_LIFE_DAYS}-day half-life; a
+        dimension&apos;s signal is the sum of weights over its mapped event
+        types (litigation also counts {CASE_WEIGHT} per active voting-rights
+        case in the state); the published value is 1 − e^(−signal/
+        {SATURATION_K}). Nationwide events contribute at full weight to
+        federal leverage and at {NATIONAL_SPILLOVER} to a state&apos;s other
+        dimensions. Pivotality is competitiveness scaled by how tight the
+        projected House majority is. Confidence grows with the weighted
+        evidence and is capped at 0.8 — this is a signal model, not ground
+        truth.
+      </Typography>
+      <Typography variant="body1">
+        Events currently flow from the Federal Register (rules, notices, and
+        presidential documents matching election phrases in title or abstract)
+        and from CourtListener RECAP dockets with nature of suit 441, the
+        federal civil cover sheet&apos;s &quot;Civil Rights: Voting&quot;
+        category. Every ingestion run is audited; source and external id are
+        stored on each event.
       </Typography>
 
       <Typography variant="h6" sx={{ fontWeight: 300 }}>

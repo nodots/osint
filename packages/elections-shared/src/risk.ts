@@ -4,7 +4,9 @@
 // weights must bump METHODOLOGY_VERSION so historical assessments remain
 // reproducible against the version they were computed with.
 
-export const METHODOLOGY_VERSION = "2026.08.1";
+// 2026.08.2: vulnerability dimensions become derived signals (see
+// derivation.ts) instead of analyst-entered values; weights unchanged.
+export const METHODOLOGY_VERSION = "2026.08.2";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {

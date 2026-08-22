@@ -127,6 +127,25 @@ services:
       - "6752"
     command: pnpm --filter @elections-tracker/api serve
 
+  elections-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    restart: unless-stopped
+    depends_on:
+      elections-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-osint}:${DB_PASSWORD}@db:5432/${ELECTIONS_DB_NAME:-elections_tracker}
+      INGEST_MODE: daily
+      # Optional; raises CourtListener rate limits (free token from
+      # courtlistener.com). Anonymous access works for the daily window.
+      COURTLISTENER_TOKEN: ${COURTLISTENER_TOKEN:-}
+      # After the ukraine run (07:30) to spread load on the shared db.
+      INGEST_TIME_UTC: ${ELECTIONS_INGEST_TIME_UTC:-08:00}
+    # Ingest once on start, then daily at INGEST_TIME_UTC.
+    command: sh scripts/elections/worker-loop.sh
+
   gateway:
     build:
       context: .
