@@ -228,7 +228,12 @@ export interface AssessmentChange {
   deltaPivotality: number;
   dimensionDeltas: Record<string, number> | null;
   methodologyVersion: string;
-  newEvents: { id: number; title: string; occurredAt: string }[];
+  newEvents: {
+    id: number;
+    title: string;
+    occurredAt: string;
+    sourceUrl: string | null;
+  }[];
 }
 
 // GET /house-control/history — one point of the §35 threat time series.

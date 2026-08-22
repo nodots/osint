@@ -10,14 +10,15 @@ import type { AssessmentChange } from "@elections-tracker/shared";
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { fetchChanges } from "../api.js";
+import { groupChanges, type LedgerGroup } from "../changes.js";
 import { PageHeader } from "../components/PageHeader.js";
 
-// "What changed" (methodology doc §23/§38): the auditable change ledger.
-// Risk-up in the red arm's color, risk-down in the blue arm's — matching the
-// map's diverging palette semantics of warm = concerning.
+// Event-centric ledger: each entry is one driving event and everything it
+// moved. Warm = risk up, cool = risk down, matching the map palette.
 const UP_COLOR = "#da654c";
 const DOWN_COLOR = "#5590d2";
 const MIN_DELTA = 0.005;
+const TOP_DISTRICTS = 8;
 
 const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
@@ -27,14 +28,85 @@ const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
 });
 
 function dimLabel(key: string): string {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .toLowerCase()
-    .trim();
+  return key.replace(/([A-Z])/g, " $1").toLowerCase().trim();
 }
 
 function pct(value: number): string {
   return `${value > 0 ? "+" : ""}${Math.round(value * 100)}`;
+}
+
+function GroupCard({ group }: { group: LedgerGroup }) {
+  const up = group.delta > 0;
+  const shown = group.districts.slice(0, TOP_DISTRICTS);
+  const rest = group.districts.length - shown.length;
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mb: 1.5 }}>
+      <Stack direction="row" spacing={1.5} alignItems="baseline">
+        <Typography variant="h6" sx={{ color: up ? UP_COLOR : DOWN_COLOR, minWidth: 48 }}>
+          {up ? "▲" : "▼"} {pct(group.delta)}
+        </Typography>
+        <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="subtitle1" sx={{ lineHeight: 1.4 }}>
+            {group.eventTitle ?? "Signal decay and data refresh"}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {group.national
+              ? `nationwide effect · ${group.districts.length} races moved above threshold`
+              : `moved ${group.districts.length} race${group.districts.length === 1 ? "" : "s"}`}
+            {group.sourceUrl && (
+              <>
+                {" · "}
+                <Link href={group.sourceUrl} target="_blank" rel="noopener">
+                  source ↗
+                </Link>
+              </>
+            )}
+          </Typography>
+        </Stack>
+      </Stack>
+
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.25 }}>
+        {shown.map((district) => (
+          <Chip
+            key={district.id}
+            size="small"
+            variant="outlined"
+            clickable
+            component={RouterLink}
+            to={`/races/${district.id}`}
+            label={`${district.id} ${pct(district.delta)}`}
+            sx={{
+              color: district.delta > 0 ? UP_COLOR : DOWN_COLOR,
+              borderColor: "rgba(255,255,255,0.23)",
+            }}
+          />
+        ))}
+        {rest > 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
+            and {rest} more
+          </Typography>
+        )}
+      </Stack>
+
+      {group.dimensionDeltas && Object.keys(group.dimensionDeltas).length > 0 && (
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+          {Object.entries(group.dimensionDeltas)
+            .filter(([, delta]) => Math.round(delta * 100) !== 0)
+            .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+            .slice(0, 4)
+            .map(([dim, delta]) => (
+              <Chip
+                key={dim}
+                size="small"
+                variant="outlined"
+                label={`${dimLabel(dim)} ${pct(delta)}`}
+                sx={{ color: "text.secondary" }}
+              />
+            ))}
+        </Stack>
+      )}
+    </Paper>
+  );
 }
 
 export function ChangesPage() {
@@ -54,16 +126,13 @@ export function ChangesPage() {
   }, []);
 
   const byDay = useMemo(() => {
-    const groups = new Map<string, AssessmentChange[]>();
-    for (const change of changes ?? []) {
-      // First-ever assessments are baselines, not news.
-      if (change.firstAssessment) continue;
-      const key = change.changedAt.slice(0, 10);
-      const group = groups.get(key);
-      if (group) group.push(change);
-      else groups.set(key, [change]);
+    const days = new Map<string, LedgerGroup[]>();
+    for (const group of groupChanges(changes ?? [])) {
+      const list = days.get(group.day);
+      if (list) list.push(group);
+      else days.set(group.day, [group]);
     }
-    return [...groups.entries()];
+    return [...days.entries()];
   }, [changes]);
 
   if (error) return <Alert severity="error">{error}</Alert>;
@@ -81,10 +150,10 @@ export function ChangesPage() {
     <Box sx={{ maxWidth: 860 }}>
       <PageHeader
         title="What changed"
-        meta="every entry is a movement in a race's risk index with the events that drove it · indices are ordinal, not probabilities"
+        meta="one entry per driving event with every race it moved · indices are ordinal, not probabilities"
       />
-      {byDay.map(([day, dayChanges]) => (
-        <Box key={day} sx={{ mb: 2 }}>
+      {byDay.map(([day, groups]) => (
+        <Box key={day} sx={{ mb: 2.5 }}>
           <Typography
             variant="overline"
             color="text.secondary"
@@ -92,75 +161,9 @@ export function ChangesPage() {
           >
             {DAY_FORMAT.format(new Date(`${day}T00:00:00Z`))}
           </Typography>
-          {dayChanges.map((change, i) => {
-            const up = change.deltaRisk > 0;
-            return (
-              <Paper key={i} variant="outlined" sx={{ p: 2, mb: 1 }}>
-                <Stack direction="row" spacing={1.5} alignItems="baseline">
-                  <Typography
-                    variant="h6"
-                    sx={{ color: up ? UP_COLOR : DOWN_COLOR, minWidth: 44 }}
-                  >
-                    {up ? "▲" : "▼"} {pct(change.deltaRisk)}
-                  </Typography>
-                  <Link
-                    component={RouterLink}
-                    to={`/races/${change.districtId}`}
-                    variant="subtitle1"
-                  >
-                    {change.districtId}
-                  </Link>
-                  <Typography variant="body2" color="text.secondary">
-                    {change.displayName} · risk index now{" "}
-                    {Math.round(change.currentRisk * 100)}
-                  </Typography>
-                </Stack>
-                {change.dimensionDeltas &&
-                  Object.keys(change.dimensionDeltas).length > 0 && (
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      useFlexGap
-                      sx={{ mt: 1 }}
-                    >
-                      {Object.entries(change.dimensionDeltas)
-                        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-                        .slice(0, 4)
-                        .map(([dim, delta]) => (
-                          <Chip
-                            key={dim}
-                            size="small"
-                            variant="outlined"
-                            label={`${dimLabel(dim)} ${pct(delta)}`}
-                          />
-                        ))}
-                      {change.deltaResistance != null &&
-                        change.deltaResistance !== 0 && (
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`resistance ${pct(change.deltaResistance)}`}
-                          />
-                        )}
-                    </Stack>
-                  )}
-                {change.newEvents.length > 0 && (
-                  <Box sx={{ mt: 1 }}>
-                    {change.newEvents.slice(0, 4).map((event) => (
-                      <Typography
-                        key={event.id}
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        ↳ {event.title}
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
-              </Paper>
-            );
-          })}
+          {groups.map((group, i) => (
+            <GroupCard key={i} group={group} />
+          ))}
         </Box>
       ))}
     </Box>

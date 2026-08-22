@@ -22,6 +22,7 @@ import {
   fetchRaces,
   fetchThreatHistory,
 } from "../api.js";
+import { groupChanges } from "../changes.js";
 import { PageHeader } from "../components/PageHeader.js";
 import {
   TimeSeriesChart,
@@ -45,46 +46,10 @@ const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
-interface LedgerGroup {
-  day: string;
-  delta: number;
-  districts: string[];
-  eventTitle: string | null;
-  national: boolean;
-}
-
-// Collapse the per-race ledger into the §35 "why" view: one row per
-// (day, driving event), listing the races it moved.
-function groupChanges(changes: AssessmentChange[]): LedgerGroup[] {
-  const groups = new Map<string, LedgerGroup>();
-  for (const change of changes) {
-    if (change.firstAssessment) continue;
-    const day = change.changedAt.slice(0, 10);
-    const event = change.newEvents[0] ?? null;
-    const key = `${day}|${event?.id ?? "drift"}|${change.deltaRisk > 0 ? "+" : "-"}`;
-    let group = groups.get(key);
-    if (!group) {
-      group = {
-        day,
-        delta: change.deltaRisk,
-        districts: [],
-        eventTitle: event?.title ?? null,
-        national: false,
-      };
-      groups.set(key, group);
-    }
-    group.districts.push(change.districtId);
-    if (Math.abs(change.deltaRisk) > Math.abs(group.delta)) {
-      group.delta = change.deltaRisk;
-    }
-    if (group.districts.length > 30) group.national = true;
-  }
-  return [...groups.values()]
+// Overview shows the top of the event-centric ledger (see ../changes.ts).
+function topLedger(changes: AssessmentChange[]) {
+  return groupChanges(changes)
     .filter((g) => g.eventTitle !== null || Math.abs(g.delta) >= 0.01)
-    .sort(
-      (a, b) =>
-        b.day.localeCompare(a.day) || Math.abs(b.delta) - Math.abs(a.delta),
-    )
     .slice(0, 5);
 }
 
@@ -128,7 +93,7 @@ export function OverviewPage() {
     return () => controller.abort();
   }, []);
 
-  const ledger = useMemo(() => groupChanges(changes), [changes]);
+  const ledger = useMemo(() => topLedger(changes), [changes]);
 
   const annotations = useMemo<SeriesAnnotation[]>(() => {
     if (!history || history.length < 2) return [];
@@ -300,10 +265,10 @@ export function OverviewPage() {
                       ) : (
                         <>
                           {group.districts.slice(0, 3).map((d, j) => (
-                            <Box component="span" key={d}>
+                            <Box component="span" key={d.id}>
                               {j > 0 && ", "}
-                              <Link component={RouterLink} to={`/races/${d}`}>
-                                {d}
+                              <Link component={RouterLink} to={`/races/${d.id}`}>
+                                {d.id}
                               </Link>
                             </Box>
                           ))}

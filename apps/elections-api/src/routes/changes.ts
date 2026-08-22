@@ -44,9 +44,16 @@ changesRouter.get("/", async (req, res, next) => {
          LEFT JOIN LATERAL (
            SELECT json_agg(json_build_object(
                     'id', e.id, 'title', e.title,
-                    'occurredAt', e.occurred_at)
+                    'occurredAt', e.occurred_at,
+                    'sourceUrl', COALESCE(evd.url, e.raw_data->>'url'))
                   ORDER BY e.occurred_at DESC) AS events
              FROM events e
+             LEFT JOIN LATERAL (
+               SELECT url FROM evidence
+                WHERE event_id = e.id
+                ORDER BY primary_source DESC, id
+                LIMIT 1
+             ) evd ON true
             WHERE e.id = ANY(c.new_event_ids)
          ) ev ON true
         WHERE abs(c.delta_risk) >= $1 ${sinceClause}
