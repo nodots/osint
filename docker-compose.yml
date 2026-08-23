@@ -31,6 +31,10 @@ services:
       ELECTIONS_DB_NAME: ${ELECTIONS_DB_NAME:-elections_tracker}
       # The apps set UTC per-connection; keep the server UTC too for consistency.
       TZ: UTC
+    ports:
+      # Loopback-only, for `pnpm dev` hot reload against the stack's data —
+      # the in-network services keep using db:5432.
+      - "127.0.0.1:6543:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/pg-init:/docker-entrypoint-initdb.d:ro

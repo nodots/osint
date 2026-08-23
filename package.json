@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel --stream dev",
+    "dev:elections": "pnpm --parallel --stream --filter @elections-tracker/api --filter @elections-tracker/web dev",
+    "dev:ukraine": "pnpm --parallel --stream --filter @ukraine-tracker/api --filter @ukraine-tracker/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "ukraine:db:migrate": "pnpm --filter @ukraine-tracker/api db:migrate",

@@ -47,9 +47,25 @@ Requires Node >= 22.13 and pnpm 11 (via `corepack enable`).
 
 ```bash
 pnpm install
-pnpm dev            # all apps in parallel
+pnpm dev:elections  # elections api (tsx watch) + web (vite HMR)
+pnpm dev:ukraine    # ukraine api + web
+pnpm dev            # everything, including workers (workers run a real
+                    # ingest on every restart — usually not what you want)
 pnpm typecheck
 ```
+
+Hot reload runs against the compose stack's database, published loopback-only
+at `127.0.0.1:6543` (`docker compose up -d db` if the stack isn't running).
+Each app reads its `DATABASE_URL`/`PORT` from a gitignored `.env`:
+
+```bash
+printf 'PORT=6752\nDATABASE_URL=postgresql://osint:osint@127.0.0.1:6543/elections_tracker\n' > apps/elections-api/.env
+printf 'PORT=6732\nDATABASE_URL=postgresql://osint:osint@127.0.0.1:6543/ukraine_tracker\n' > apps/ukraine-api/.env
+```
+
+Web dev servers: elections at `localhost:6751/elections/`, ukraine at
+`localhost:6731/ukraine/` — both talk to the local APIs directly (CORS),
+no gateway needed.
 
 ## Deployment
 
