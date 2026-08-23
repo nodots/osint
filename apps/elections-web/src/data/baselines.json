@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22",
+  "generatedAt": "2026-08-23",
   "methodologyVersion": "2026.09.4",
   "matchedSources2026": 80,
   "cycles": {
@@ -413,13 +413,13 @@
       ],
       "composition": {
         "litigationExposure": 83,
-        "activePressure": 64,
+        "activePressure": 67,
         "institutionalResistance": 25
       },
       "volumes": {
         "dockets": 284,
         "rulings": 78,
-        "blockingInjunctions": 29
+        "blockingInjunctions": 25
       }
     },
     "2018": {
@@ -832,13 +832,13 @@
       ],
       "composition": {
         "litigationExposure": 82,
-        "activePressure": 59,
+        "activePressure": 74,
         "institutionalResistance": 24
       },
       "volumes": {
         "dockets": 221,
         "rulings": 58,
-        "blockingInjunctions": 28
+        "blockingInjunctions": 24
       }
     },
     "2020": {
@@ -846,418 +846,418 @@
       "series": [
         {
           "dte": 100,
-          "hrp": 42
+          "hrp": 131
         },
         {
           "dte": 99,
-          "hrp": 41
+          "hrp": 131
         },
         {
           "dte": 98,
-          "hrp": 39
+          "hrp": 131
         },
         {
           "dte": 97,
-          "hrp": 58
+          "hrp": 135
         },
         {
           "dte": 96,
-          "hrp": 60
+          "hrp": 135
         },
         {
           "dte": 95,
-          "hrp": 59
+          "hrp": 134
         },
         {
           "dte": 94,
-          "hrp": 59
+          "hrp": 134
         },
         {
           "dte": 93,
-          "hrp": 58
+          "hrp": 134
         },
         {
           "dte": 92,
-          "hrp": 55
+          "hrp": 133
         },
         {
           "dte": 91,
-          "hrp": 56
+          "hrp": 133
         },
         {
           "dte": 90,
-          "hrp": 55
+          "hrp": 133
         },
         {
           "dte": 89,
-          "hrp": 55
+          "hrp": 132
         },
         {
           "dte": 88,
-          "hrp": 53
+          "hrp": 131
         },
         {
           "dte": 87,
-          "hrp": 53
+          "hrp": 131
         },
         {
           "dte": 86,
-          "hrp": 54
+          "hrp": 131
         },
         {
           "dte": 85,
-          "hrp": 55
+          "hrp": 131
         },
         {
           "dte": 84,
-          "hrp": 58
+          "hrp": 132
         },
         {
           "dte": 83,
-          "hrp": 58
+          "hrp": 133
         },
         {
           "dte": 82,
-          "hrp": 57
+          "hrp": 132
         },
         {
           "dte": 81,
-          "hrp": 58
+          "hrp": 132
         },
         {
           "dte": 80,
-          "hrp": 57
+          "hrp": 130
         },
         {
           "dte": 79,
-          "hrp": 57
+          "hrp": 130
         },
         {
           "dte": 78,
-          "hrp": 57
+          "hrp": 131
         },
         {
           "dte": 77,
-          "hrp": 57
+          "hrp": 130
         },
         {
           "dte": 76,
-          "hrp": 58
+          "hrp": 130
         },
         {
           "dte": 75,
-          "hrp": 58
+          "hrp": 130
         },
         {
           "dte": 74,
-          "hrp": 56
+          "hrp": 130
         },
         {
           "dte": 73,
-          "hrp": 56
+          "hrp": 129
         },
         {
           "dte": 72,
-          "hrp": 56
+          "hrp": 127
         },
         {
           "dte": 71,
-          "hrp": 56
+          "hrp": 127
         },
         {
           "dte": 70,
-          "hrp": 56
+          "hrp": 127
         },
         {
           "dte": 69,
-          "hrp": 58
+          "hrp": 127
         },
         {
           "dte": 68,
-          "hrp": 57
+          "hrp": 124
         },
         {
           "dte": 67,
-          "hrp": 54
+          "hrp": 123
         },
         {
           "dte": 66,
-          "hrp": 53
+          "hrp": 121
         },
         {
           "dte": 65,
-          "hrp": 53
+          "hrp": 121
         },
         {
           "dte": 64,
-          "hrp": 53
+          "hrp": 121
         },
         {
           "dte": 63,
-          "hrp": 38
+          "hrp": 116
         },
         {
           "dte": 62,
-          "hrp": 39
+          "hrp": 118
         },
         {
           "dte": 61,
-          "hrp": 38
+          "hrp": 118
         },
         {
           "dte": 60,
-          "hrp": 53
+          "hrp": 121
         },
         {
           "dte": 59,
-          "hrp": 53
+          "hrp": 121
         },
         {
           "dte": 58,
-          "hrp": 51
+          "hrp": 120
         },
         {
           "dte": 57,
-          "hrp": 52
+          "hrp": 120
         },
         {
           "dte": 56,
-          "hrp": 52
+          "hrp": 119
         },
         {
           "dte": 55,
-          "hrp": 53
+          "hrp": 119
         },
         {
           "dte": 54,
-          "hrp": 55
+          "hrp": 119
         },
         {
           "dte": 53,
-          "hrp": 55
+          "hrp": 119
         },
         {
           "dte": 52,
-          "hrp": 54
+          "hrp": 119
         },
         {
           "dte": 51,
-          "hrp": 55
+          "hrp": 120
         },
         {
           "dte": 50,
-          "hrp": 55
+          "hrp": 120
         },
         {
           "dte": 49,
-          "hrp": 55
+          "hrp": 120
         },
         {
           "dte": 48,
-          "hrp": 55
+          "hrp": 120
         },
         {
           "dte": 47,
-          "hrp": 55
+          "hrp": 120
         },
         {
           "dte": 46,
-          "hrp": 56
+          "hrp": 120
         },
         {
           "dte": 45,
-          "hrp": 54
+          "hrp": 120
         },
         {
           "dte": 44,
-          "hrp": 53
+          "hrp": 120
         },
         {
           "dte": 43,
-          "hrp": 33
+          "hrp": 110
         },
         {
           "dte": 42,
-          "hrp": 37
+          "hrp": 110
         },
         {
           "dte": 41,
-          "hrp": 53
+          "hrp": 121
         },
         {
           "dte": 40,
-          "hrp": 50
+          "hrp": 120
         },
         {
           "dte": 39,
-          "hrp": 53
+          "hrp": 117
         },
         {
           "dte": 38,
-          "hrp": 51
+          "hrp": 117
         },
         {
           "dte": 37,
-          "hrp": 51
+          "hrp": 117
         },
         {
           "dte": 36,
-          "hrp": 38
+          "hrp": 109
         },
         {
           "dte": 35,
-          "hrp": 38
+          "hrp": 107
         },
         {
           "dte": 34,
-          "hrp": 39
+          "hrp": 107
         },
         {
           "dte": 33,
-          "hrp": 39
+          "hrp": 107
         },
         {
           "dte": 32,
-          "hrp": 39
+          "hrp": 105
         },
         {
           "dte": 31,
-          "hrp": 39
+          "hrp": 103
         },
         {
           "dte": 30,
-          "hrp": 39
+          "hrp": 103
         },
         {
           "dte": 29,
-          "hrp": 39
+          "hrp": 103
         },
         {
           "dte": 28,
-          "hrp": 42
+          "hrp": 106
         },
         {
           "dte": 27,
-          "hrp": 41
+          "hrp": 105
         },
         {
           "dte": 26,
-          "hrp": 41
+          "hrp": 105
         },
         {
           "dte": 25,
-          "hrp": 41
+          "hrp": 105
         },
         {
           "dte": 24,
-          "hrp": 41
+          "hrp": 105
         },
         {
           "dte": 23,
-          "hrp": 41
+          "hrp": 105
         },
         {
           "dte": 22,
-          "hrp": 42
+          "hrp": 104
         },
         {
           "dte": 21,
-          "hrp": 41
+          "hrp": 103
         },
         {
           "dte": 20,
-          "hrp": 41
+          "hrp": 103
         },
         {
           "dte": 19,
-          "hrp": 41
+          "hrp": 103
         },
         {
           "dte": 18,
-          "hrp": 43
+          "hrp": 104
         },
         {
           "dte": 17,
-          "hrp": 43
+          "hrp": 104
         },
         {
           "dte": 16,
-          "hrp": 43
+          "hrp": 104
         },
         {
           "dte": 15,
-          "hrp": 43
+          "hrp": 104
         },
         {
           "dte": 14,
-          "hrp": 33
+          "hrp": 100
         },
         {
           "dte": 13,
-          "hrp": 32
+          "hrp": 100
         },
         {
           "dte": 12,
-          "hrp": 31
+          "hrp": 100
         },
         {
           "dte": 11,
-          "hrp": 30
+          "hrp": 100
         },
         {
           "dte": 10,
-          "hrp": 30
+          "hrp": 100
         },
         {
           "dte": 9,
-          "hrp": 30
+          "hrp": 100
         },
         {
           "dte": 8,
-          "hrp": 31
+          "hrp": 99
         },
         {
           "dte": 7,
-          "hrp": 27
+          "hrp": 98
         },
         {
           "dte": 6,
-          "hrp": 27
+          "hrp": 97
         },
         {
           "dte": 5,
-          "hrp": 27
+          "hrp": 97
         },
         {
           "dte": 4,
-          "hrp": 28
+          "hrp": 96
         },
         {
           "dte": 3,
-          "hrp": 30
+          "hrp": 97
         },
         {
           "dte": 2,
-          "hrp": 29
+          "hrp": 92
         },
         {
           "dte": 1,
-          "hrp": 30
+          "hrp": 91
         },
         {
           "dte": 0,
-          "hrp": 29
+          "hrp": 92
         }
       ],
       "composition": {
         "litigationExposure": 94,
-        "activePressure": 71,
+        "activePressure": 84,
         "institutionalResistance": 55
       },
       "volumes": {
         "dockets": 423,
         "rulings": 188,
-        "blockingInjunctions": 101
+        "blockingInjunctions": 75
       }
     },
     "2022": {
@@ -1265,418 +1265,418 @@
       "series": [
         {
           "dte": 100,
-          "hrp": 52
+          "hrp": 142
         },
         {
           "dte": 99,
-          "hrp": 52
+          "hrp": 142
         },
         {
           "dte": 98,
-          "hrp": 54
+          "hrp": 143
         },
         {
           "dte": 97,
-          "hrp": 56
+          "hrp": 142
         },
         {
           "dte": 96,
-          "hrp": 55
+          "hrp": 142
         },
         {
           "dte": 95,
-          "hrp": 54
+          "hrp": 142
         },
         {
           "dte": 94,
-          "hrp": 54
+          "hrp": 142
         },
         {
           "dte": 93,
-          "hrp": 54
+          "hrp": 142
         },
         {
           "dte": 92,
-          "hrp": 67
+          "hrp": 142
         },
         {
           "dte": 91,
-          "hrp": 67
+          "hrp": 143
         },
         {
           "dte": 90,
-          "hrp": 67
+          "hrp": 142
         },
         {
           "dte": 89,
-          "hrp": 67
+          "hrp": 142
         },
         {
           "dte": 88,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 87,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 86,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 85,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 84,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 83,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 82,
-          "hrp": 68
+          "hrp": 142
         },
         {
           "dte": 81,
-          "hrp": 67
+          "hrp": 141
         },
         {
           "dte": 80,
-          "hrp": 67
+          "hrp": 140
         },
         {
           "dte": 79,
-          "hrp": 67
+          "hrp": 140
         },
         {
           "dte": 78,
-          "hrp": 66
+          "hrp": 139
         },
         {
           "dte": 77,
-          "hrp": 66
+          "hrp": 139
         },
         {
           "dte": 76,
-          "hrp": 65
+          "hrp": 139
         },
         {
           "dte": 75,
-          "hrp": 66
+          "hrp": 139
         },
         {
           "dte": 74,
-          "hrp": 64
+          "hrp": 139
         },
         {
           "dte": 73,
-          "hrp": 64
+          "hrp": 137
         },
         {
           "dte": 72,
-          "hrp": 62
+          "hrp": 137
         },
         {
           "dte": 71,
-          "hrp": 64
+          "hrp": 136
         },
         {
           "dte": 70,
-          "hrp": 62
+          "hrp": 135
         },
         {
           "dte": 69,
-          "hrp": 67
+          "hrp": 136
         },
         {
           "dte": 68,
-          "hrp": 66
+          "hrp": 136
         },
         {
           "dte": 67,
-          "hrp": 68
+          "hrp": 135
         },
         {
           "dte": 66,
-          "hrp": 67
+          "hrp": 134
         },
         {
           "dte": 65,
-          "hrp": 67
+          "hrp": 134
         },
         {
           "dte": 64,
-          "hrp": 67
+          "hrp": 134
         },
         {
           "dte": 63,
-          "hrp": 67
+          "hrp": 134
         },
         {
           "dte": 62,
-          "hrp": 65
+          "hrp": 133
         },
         {
           "dte": 61,
-          "hrp": 65
+          "hrp": 130
         },
         {
           "dte": 60,
-          "hrp": 65
+          "hrp": 129
         },
         {
           "dte": 59,
-          "hrp": 65
+          "hrp": 129
         },
         {
           "dte": 58,
-          "hrp": 64
+          "hrp": 129
         },
         {
           "dte": 57,
-          "hrp": 66
+          "hrp": 129
         },
         {
           "dte": 56,
-          "hrp": 65
+          "hrp": 129
         },
         {
           "dte": 55,
-          "hrp": 65
+          "hrp": 129
         },
         {
           "dte": 54,
-          "hrp": 65
+          "hrp": 129
         },
         {
           "dte": 53,
-          "hrp": 66
+          "hrp": 129
         },
         {
           "dte": 52,
-          "hrp": 66
+          "hrp": 129
         },
         {
           "dte": 51,
-          "hrp": 66
+          "hrp": 129
         },
         {
           "dte": 50,
-          "hrp": 65
+          "hrp": 129
         },
         {
           "dte": 49,
-          "hrp": 64
+          "hrp": 129
         },
         {
           "dte": 48,
-          "hrp": 63
+          "hrp": 129
         },
         {
           "dte": 47,
-          "hrp": 83
+          "hrp": 140
         },
         {
           "dte": 46,
-          "hrp": 84
+          "hrp": 140
         },
         {
           "dte": 45,
-          "hrp": 83
+          "hrp": 139
         },
         {
           "dte": 44,
-          "hrp": 83
+          "hrp": 139
         },
         {
           "dte": 43,
-          "hrp": 83
+          "hrp": 139
         },
         {
           "dte": 42,
-          "hrp": 83
+          "hrp": 139
         },
         {
           "dte": 41,
-          "hrp": 84
+          "hrp": 142
         },
         {
           "dte": 40,
-          "hrp": 84
+          "hrp": 142
         },
         {
           "dte": 39,
-          "hrp": 84
+          "hrp": 143
         },
         {
           "dte": 38,
-          "hrp": 84
+          "hrp": 142
         },
         {
           "dte": 37,
-          "hrp": 83
+          "hrp": 141
         },
         {
           "dte": 36,
-          "hrp": 83
+          "hrp": 141
         },
         {
           "dte": 35,
-          "hrp": 83
+          "hrp": 140
         },
         {
           "dte": 34,
-          "hrp": 83
+          "hrp": 140
         },
         {
           "dte": 33,
-          "hrp": 82
+          "hrp": 140
         },
         {
           "dte": 32,
-          "hrp": 81
+          "hrp": 140
         },
         {
           "dte": 31,
-          "hrp": 80
+          "hrp": 138
         },
         {
           "dte": 30,
-          "hrp": 80
+          "hrp": 136
         },
         {
           "dte": 29,
-          "hrp": 80
+          "hrp": 136
         },
         {
           "dte": 28,
-          "hrp": 80
+          "hrp": 136
         },
         {
           "dte": 27,
-          "hrp": 80
+          "hrp": 136
         },
         {
           "dte": 26,
-          "hrp": 80
+          "hrp": 137
         },
         {
           "dte": 25,
-          "hrp": 80
+          "hrp": 135
         },
         {
           "dte": 24,
-          "hrp": 80
+          "hrp": 133
         },
         {
           "dte": 23,
-          "hrp": 79
+          "hrp": 133
         },
         {
           "dte": 22,
-          "hrp": 77
+          "hrp": 132
         },
         {
           "dte": 21,
-          "hrp": 79
+          "hrp": 133
         },
         {
           "dte": 20,
-          "hrp": 78
+          "hrp": 131
         },
         {
           "dte": 19,
-          "hrp": 78
+          "hrp": 131
         },
         {
           "dte": 18,
-          "hrp": 77
+          "hrp": 130
         },
         {
           "dte": 17,
-          "hrp": 77
+          "hrp": 130
         },
         {
           "dte": 16,
-          "hrp": 76
+          "hrp": 130
         },
         {
           "dte": 15,
-          "hrp": 75
+          "hrp": 131
         },
         {
           "dte": 14,
-          "hrp": 75
+          "hrp": 131
         },
         {
           "dte": 13,
-          "hrp": 76
+          "hrp": 131
         },
         {
           "dte": 12,
-          "hrp": 78
+          "hrp": 133
         },
         {
           "dte": 11,
-          "hrp": 75
+          "hrp": 133
         },
         {
           "dte": 10,
-          "hrp": 74
+          "hrp": 130
         },
         {
           "dte": 9,
-          "hrp": 73
+          "hrp": 130
         },
         {
           "dte": 8,
-          "hrp": 74
+          "hrp": 132
         },
         {
           "dte": 7,
-          "hrp": 74
+          "hrp": 132
         },
         {
           "dte": 6,
-          "hrp": 74
+          "hrp": 132
         },
         {
           "dte": 5,
-          "hrp": 72
+          "hrp": 132
         },
         {
           "dte": 4,
-          "hrp": 72
+          "hrp": 132
         },
         {
           "dte": 3,
-          "hrp": 71
+          "hrp": 131
         },
         {
           "dte": 2,
-          "hrp": 71
+          "hrp": 130
         },
         {
           "dte": 1,
-          "hrp": 73
+          "hrp": 130
         },
         {
           "dte": 0,
-          "hrp": 73
+          "hrp": 132
         }
       ],
       "composition": {
         "litigationExposure": 85,
-        "activePressure": 66,
+        "activePressure": 81,
         "institutionalResistance": 13
       },
       "volumes": {
         "dockets": 334,
         "rulings": 77,
-        "blockingInjunctions": 41
+        "blockingInjunctions": 29
       }
     },
     "2024": {
@@ -1684,418 +1684,418 @@
       "series": [
         {
           "dte": 100,
-          "hrp": 41
+          "hrp": 138
         },
         {
           "dte": 99,
-          "hrp": 41
+          "hrp": 137
         },
         {
           "dte": 98,
-          "hrp": 49
+          "hrp": 138
         },
         {
           "dte": 97,
-          "hrp": 50
+          "hrp": 138
         },
         {
           "dte": 96,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 95,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 94,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 93,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 92,
-          "hrp": 76
+          "hrp": 145
         },
         {
           "dte": 91,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 90,
-          "hrp": 76
+          "hrp": 145
         },
         {
           "dte": 89,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 88,
-          "hrp": 77
+          "hrp": 145
         },
         {
           "dte": 87,
-          "hrp": 77
+          "hrp": 144
         },
         {
           "dte": 86,
-          "hrp": 77
+          "hrp": 142
         },
         {
           "dte": 85,
-          "hrp": 77
+          "hrp": 142
         },
         {
           "dte": 84,
-          "hrp": 76
+          "hrp": 142
         },
         {
           "dte": 83,
-          "hrp": 77
+          "hrp": 143
         },
         {
           "dte": 82,
-          "hrp": 76
+          "hrp": 143
         },
         {
           "dte": 81,
-          "hrp": 76
+          "hrp": 143
         },
         {
           "dte": 80,
-          "hrp": 76
+          "hrp": 143
         },
         {
           "dte": 79,
-          "hrp": 76
+          "hrp": 143
         },
         {
           "dte": 78,
-          "hrp": 78
+          "hrp": 143
         },
         {
           "dte": 77,
-          "hrp": 78
+          "hrp": 143
         },
         {
           "dte": 76,
-          "hrp": 78
+          "hrp": 143
         },
         {
           "dte": 75,
-          "hrp": 80
+          "hrp": 142
         },
         {
           "dte": 74,
-          "hrp": 80
+          "hrp": 142
         },
         {
           "dte": 73,
-          "hrp": 80
+          "hrp": 141
         },
         {
           "dte": 72,
-          "hrp": 80
+          "hrp": 141
         },
         {
           "dte": 71,
-          "hrp": 80
+          "hrp": 141
         },
         {
           "dte": 70,
-          "hrp": 81
+          "hrp": 142
         },
         {
           "dte": 69,
-          "hrp": 85
+          "hrp": 145
         },
         {
           "dte": 68,
-          "hrp": 82
+          "hrp": 145
         },
         {
           "dte": 67,
-          "hrp": 78
+          "hrp": 144
         },
         {
           "dte": 66,
-          "hrp": 77
+          "hrp": 143
         },
         {
           "dte": 65,
-          "hrp": 77
+          "hrp": 143
         },
         {
           "dte": 64,
-          "hrp": 76
+          "hrp": 143
         },
         {
           "dte": 63,
-          "hrp": 76
+          "hrp": 140
         },
         {
           "dte": 62,
-          "hrp": 76
+          "hrp": 140
         },
         {
           "dte": 61,
-          "hrp": 74
+          "hrp": 140
         },
         {
           "dte": 60,
-          "hrp": 78
+          "hrp": 143
         },
         {
           "dte": 59,
-          "hrp": 78
+          "hrp": 142
         },
         {
           "dte": 58,
-          "hrp": 77
+          "hrp": 141
         },
         {
           "dte": 57,
-          "hrp": 76
+          "hrp": 141
         },
         {
           "dte": 56,
-          "hrp": 79
+          "hrp": 143
         },
         {
           "dte": 55,
-          "hrp": 79
+          "hrp": 143
         },
         {
           "dte": 54,
-          "hrp": 79
+          "hrp": 141
         },
         {
           "dte": 53,
-          "hrp": 79
+          "hrp": 141
         },
         {
           "dte": 52,
-          "hrp": 79
+          "hrp": 140
         },
         {
           "dte": 51,
-          "hrp": 79
+          "hrp": 140
         },
         {
           "dte": 50,
-          "hrp": 80
+          "hrp": 141
         },
         {
           "dte": 49,
-          "hrp": 84
+          "hrp": 143
         },
         {
           "dte": 48,
-          "hrp": 83
+          "hrp": 143
         },
         {
           "dte": 47,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 46,
-          "hrp": 100
+          "hrp": 149
         },
         {
           "dte": 45,
-          "hrp": 100
+          "hrp": 149
         },
         {
           "dte": 44,
-          "hrp": 100
+          "hrp": 149
         },
         {
           "dte": 43,
-          "hrp": 100
+          "hrp": 149
         },
         {
           "dte": 42,
-          "hrp": 100
+          "hrp": 149
         },
         {
           "dte": 41,
-          "hrp": 101
+          "hrp": 150
         },
         {
           "dte": 40,
-          "hrp": 102
+          "hrp": 150
         },
         {
           "dte": 39,
-          "hrp": 101
+          "hrp": 148
         },
         {
           "dte": 38,
-          "hrp": 101
+          "hrp": 148
         },
         {
           "dte": 37,
-          "hrp": 100
+          "hrp": 148
         },
         {
           "dte": 36,
-          "hrp": 100
+          "hrp": 148
         },
         {
           "dte": 35,
-          "hrp": 100
+          "hrp": 148
         },
         {
           "dte": 34,
-          "hrp": 98
+          "hrp": 147
         },
         {
           "dte": 33,
-          "hrp": 98
+          "hrp": 148
         },
         {
           "dte": 32,
-          "hrp": 98
+          "hrp": 148
         },
         {
           "dte": 31,
-          "hrp": 98
+          "hrp": 147
         },
         {
           "dte": 30,
-          "hrp": 97
+          "hrp": 147
         },
         {
           "dte": 29,
-          "hrp": 98
+          "hrp": 147
         },
         {
           "dte": 28,
-          "hrp": 98
+          "hrp": 147
         },
         {
           "dte": 27,
-          "hrp": 98
+          "hrp": 147
         },
         {
           "dte": 26,
-          "hrp": 96
+          "hrp": 146
         },
         {
           "dte": 25,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 24,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 23,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 22,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 21,
-          "hrp": 98
+          "hrp": 147
         },
         {
           "dte": 20,
-          "hrp": 98
+          "hrp": 146
         },
         {
           "dte": 19,
-          "hrp": 98
+          "hrp": 146
         },
         {
           "dte": 18,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 17,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 16,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 15,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 14,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 13,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 12,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 11,
-          "hrp": 99
+          "hrp": 146
         },
         {
           "dte": 10,
-          "hrp": 99
+          "hrp": 145
         },
         {
           "dte": 9,
-          "hrp": 96
+          "hrp": 145
         },
         {
           "dte": 8,
-          "hrp": 98
+          "hrp": 144
         },
         {
           "dte": 7,
-          "hrp": 94
+          "hrp": 143
         },
         {
           "dte": 6,
-          "hrp": 97
+          "hrp": 144
         },
         {
           "dte": 5,
-          "hrp": 98
+          "hrp": 145
         },
         {
           "dte": 4,
-          "hrp": 98
+          "hrp": 145
         },
         {
           "dte": 3,
-          "hrp": 98
+          "hrp": 145
         },
         {
           "dte": 2,
-          "hrp": 99
+          "hrp": 144
         },
         {
           "dte": 1,
-          "hrp": 103
+          "hrp": 150
         },
         {
           "dte": 0,
-          "hrp": 103
+          "hrp": 149
         }
       ],
       "composition": {
         "litigationExposure": 84,
-        "activePressure": 62,
+        "activePressure": 77,
         "institutionalResistance": 19
       },
       "volumes": {
         "dockets": 298,
         "rulings": 60,
-        "blockingInjunctions": 31
+        "blockingInjunctions": 13
       }
     }
   }

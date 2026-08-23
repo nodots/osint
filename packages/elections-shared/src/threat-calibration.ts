@@ -5,14 +5,14 @@
 // scale is defined against this distribution, so a level always means
 // "relative to where past cycles actually sat," not an invented constant.
 export const THREAT_CALIBRATION = {
-  generatedAt: "2026-08-22",
+  generatedAt: "2026-08-23",
   methodologyVersion: "2026.09.4",
   cycles: [2016, 2018, 2020, 2022, 2024],
   observations: 505,
   // Cutpoints on the pooled distribution.
-  p50: 51,
-  p90: 84,
-  max: 103,
+  p50: 120,
+  p90: 145,
+  max: 150,
 } as const;
 
 export type ControlThreat = "LOW" | "MODERATE" | "HIGH" | "UNKNOWN";

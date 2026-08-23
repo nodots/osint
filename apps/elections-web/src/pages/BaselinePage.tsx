@@ -18,9 +18,18 @@ import baselines from "../data/baselines.json";
 // worker); the 2026 series is live.
 
 const ELECTION_DAY_2026 = new Date("2026-11-03T00:00:00Z").getTime();
-const C2022 = "rgba(255,255,255,0.35)";
+const C_EARLY = "rgba(255,255,255,0.35)"; // 2016/2018: flat zero lines
+const C2020 = "#58a88f";
+const C2022 = "#9179c9";
 const C2024 = "#5590d2";
 const C2026 = "#da654c";
+const CYCLE_COLORS: Record<string, string> = {
+  "2016": C_EARLY,
+  "2018": C_EARLY,
+  "2020": C2020,
+  "2022": C2022,
+  "2024": C2024,
+};
 
 interface Pt {
   dte: number;
@@ -65,7 +74,7 @@ function BaselineChart({
 
   return (
     <Box sx={{ overflowX: "auto" }}>
-      <svg width={width} height={height} role="img" aria-label="Three cycles compared by days until election day">
+      <svg width={width} height={height} role="img" aria-label="Six cycles compared by days until election day">
         {gridValues.map((v) => (
           <g key={v}>
             <line x1={padLeft} y1={y(v)} x2={padLeft + plotW} y2={y(v)}
@@ -78,7 +87,7 @@ function BaselineChart({
             key={cycle}
             d={path(c.series)}
             fill="none"
-            stroke={cycle === "2024" ? C2024 : C2022}
+            stroke={CYCLE_COLORS[cycle] ?? C_EARLY}
             strokeWidth={2}
           />
         ))}
@@ -95,7 +104,7 @@ function BaselineChart({
                   stroke="rgba(218,101,76,0.3)" strokeWidth={1} strokeDasharray="3 3" />
                 <circle cx={x(last.dte)} cy={y(matched)} r={4} fill="#0a0a0a" stroke={C2026} strokeWidth={2} strokeDasharray="2 2" />
                 <text x={x(last.dte) + 11} y={y(matched) + 4} fill="rgba(255,255,255,0.65)" fontSize={12}>
-                  {matched} · 2026 on matched sources
+                  {matched} · 2026 without state legislation
                 </text>
               </g>
             )}
@@ -107,13 +116,17 @@ function BaselineChart({
         <text x={padLeft} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11}>105 days out</text>
         <text x={x(50)} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11} textAnchor="middle">50 days out</text>
         <text x={padLeft + plotW} y={height - 8} fill="rgba(255,255,255,0.45)" fontSize={11} textAnchor="end">election day</text>
-        <g transform={`translate(${padLeft + plotW - 340},${padTop - 12})`}>
-          <line x1={0} y1={0} x2={22} y2={0} stroke={C2022} strokeWidth={2} />
-          <text x={28} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2016–2022</text>
-          <line x1={100} y1={0} x2={122} y2={0} stroke={C2024} strokeWidth={2} />
-          <text x={128} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2024</text>
-          <line x1={170} y1={0} x2={192} y2={0} stroke={C2026} strokeWidth={2.5} />
-          <text x={198} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2026</text>
+        <g transform={`translate(${padLeft + plotW - 500},${padTop - 12})`}>
+          <line x1={0} y1={0} x2={22} y2={0} stroke={C_EARLY} strokeWidth={2} />
+          <text x={28} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2016–2018</text>
+          <line x1={104} y1={0} x2={126} y2={0} stroke={C2020} strokeWidth={2} />
+          <text x={132} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2020</text>
+          <line x1={178} y1={0} x2={200} y2={0} stroke={C2022} strokeWidth={2} />
+          <text x={206} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2022</text>
+          <line x1={252} y1={0} x2={274} y2={0} stroke={C2024} strokeWidth={2} />
+          <text x={280} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2024</text>
+          <line x1={326} y1={0} x2={348} y2={0} stroke={C2026} strokeWidth={2.5} />
+          <text x={354} y={4} fill="rgba(255,255,255,0.65)" fontSize={12}>2026</text>
         </g>
       </svg>
     </Box>
@@ -229,16 +242,18 @@ export function BaselinePage() {
                   The finding · {last?.dte ?? "—"} days out
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.55 }}>
-                  On identical sources at the same distance from election day,
-                  2026 sits at the top of the recent-cycle range — level with
-                  2024, above 2020 and 2022 — not outside it. Recent litigious
-                  cycles read high here; that is the model registering live
-                  election litigation, not a verdict of subversion.
+                  On identical sources — every cycle now carries its own
+                  era&apos;s state legislation alongside its litigation — 2026
+                  sits at the top of the recent-cycle range at the same
+                  distance from election day: level with 2024, above 2020 and
+                  2022, not outside the range. Recent litigious cycles read
+                  high here; that is the model registering live election
+                  activity, not a verdict of subversion.
                 </Typography>
                 <Stack direction="row" spacing={2.5} flexWrap="wrap" useFlexGap>
                   {(["2016", "2018", "2020", "2022"] as const).map((c) => (
                     <Stack key={c}>
-                      <Typography variant="h4" sx={{ fontWeight: 300, color: C2022 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 300, color: CYCLE_COLORS[c] }}>
                         {atSameDte(c) ?? "—"}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">{c}</Typography>
@@ -252,15 +267,15 @@ export function BaselinePage() {
                   </Stack>
                   <Stack>
                     <Typography variant="h4" sx={{ fontWeight: 300, color: C2026 }}>
-                      {matched ?? "—"}
+                      {last?.hrp ?? "—"}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">2026 · matched sources</Typography>
+                    <Typography variant="caption" color="text.secondary">2026 · live</Typography>
                   </Stack>
                 </Stack>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                  The full 2026 model reads {last?.hrp ?? "—"}. The difference is the
-                  state-legislation source, which has no historical counterpart — so
-                  cross-cycle claims use the matched number.
+                  Sensitivity: with the state-legislation layer removed, 2026
+                  reads {matched ?? "—"}. The ordering against the other cycles
+                  does not change.
                 </Typography>
               </Stack>
             </Paper>
@@ -308,8 +323,8 @@ export function BaselinePage() {
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1.5 }}>
               2026 carries more litigation exposure and more active exercise of
               mechanisms, with less judicial-resistance headroom, than either baseline
-              reached by its election day. Rows: 2022 (gray), 2024 (blue), 2026 (warm,
-              live).
+              reached by its election day. Rows: 2022 (purple), 2024 (blue), 2026
+              (warm, live).
             </Typography>
           </Paper>
         </Grid>
@@ -324,8 +339,10 @@ export function BaselinePage() {
               methodology from event occurrence dates, with status resolved as
               of each replay day from recorded transition dates (a small
               residual — under 3% of cases — has no recorded date and keeps its
-              current status). State legislation cannot be replayed and is
-              excluded from comparisons. State-court and county incidents are
+              current status). State legislation is replayed from the
+              OpenStates bulk archive, but its record thins sharply before
+              2017, so 2016&apos;s legislative layer is undercounted.
+              State-court and county incidents are
               under-covered in every cycle, RECAP&apos;s coverage thins before
               ~2018 and grows since, the high-risk cutoff is a fixed constant
               many races sit near, and the injunction-as-resistance reading is

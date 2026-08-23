@@ -198,10 +198,10 @@ export function MethodologyPage() {
         ({THREAT_CALIBRATION.p90}) — beyond nearly every cycle-day any
         baseline recorded — and UNKNOWN means no assessed races. The
         cutpoints regenerate with the baselines, so the scale is a position
-        in observed history, not an invented constant. One asymmetry is
-        inherent: the live count includes the state-legislation source,
-        which baselines cannot see, so the level leans conservative (reads
-        high rather than low).
+        in observed history, not an invented constant. The baselines carry
+        the same sources as the live model, including the historical
+        state-legislation record loaded from the OpenStates bulk archive,
+        so the comparison is like-for-like.
       </Typography>
       <Typography variant="body1">
         For reproducibility against the raw data: the public term
@@ -221,19 +221,21 @@ export function MethodologyPage() {
       <Typography variant="body1">
         The identical pipeline was replayed against every cycle 2016–2024
         (that cycle&apos;s districts, candidates, derived ratings, and the
-        era&apos;s events from the same sources; 100-day assessment replays
-        ending on each election day, with status resolved as of each replay
-        day). An earlier run of this backtest read all baselines at zero;
-        that was look-ahead bias — replays judged cases by their current
-        status — and was corrected in methodology 2026.09.4. Corrected:
-        2016 and 2018 read zero (blowout-projected majorities zero the
-        pivotality term), while 2020, 2022, and 2024 read 27–103 across
-        their final 100 days. On matched sources at the same distance from
-        election day, 2026 reads level with 2024 — the top of the recent
-        range, not outside it. The state-legislation source has no
-        historical counterpart and is excluded from cross-cycle
-        comparisons. Full tables, the correction history, and limitations
-        are published in the repository&apos;s backtest report.
+        era&apos;s events from the same sources — including that era&apos;s
+        state legislation, loaded from the OpenStates bulk archive with
+        status resolved as of each replay day; 100-day assessment replays
+        ending on each election day). An earlier run of this backtest read
+        all baselines at zero; that was look-ahead bias — replays judged
+        cases by their current status — and was corrected in methodology
+        2026.09.4. Corrected: 2016 and 2018 read zero (blowout-projected
+        majorities zero the pivotality term; the pre-2017 legislative
+        record is also far thinner), while 2020, 2022, and 2024 read
+        roughly 91–150 across their final 100 days. At the same distance
+        from election day, 2026 reads level with 2024 — the top of the
+        recent range, not outside it — and the ordering holds with the
+        state-legislation layer removed. Full tables, the correction
+        history, and limitations are published in the repository&apos;s
+        backtest report.
       </Typography>
 
       <Typography variant="h6" sx={{ fontWeight: 300 }}>
