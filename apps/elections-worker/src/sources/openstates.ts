@@ -14,7 +14,7 @@ import type { SourceEvent } from "../services/ingest.js";
 
 const API = "https://v3.openstates.org/bills";
 
-const TERM_QUERIES = [
+export const TERM_QUERIES = [
   "voter registration",
   "election administration",
   "absentee ballot",
@@ -23,7 +23,7 @@ const TERM_QUERIES = [
   "voter roll",
 ];
 
-const MECHANISM_TAGS: [RegExp, EventType][] = [
+export const MECHANISM_TAGS: [RegExp, EventType][] = [
   [/absentee|mail.{0,10}ballot|vote by mail/i, "MAIL_BALLOT_RULE"],
   [/registration|voter roll|list maintenance/i, "VOTER_REGISTRATION"],
   [/citizenship/i, "CITIZENSHIP_VERIFICATION"],
@@ -32,7 +32,7 @@ const MECHANISM_TAGS: [RegExp, EventType][] = [
   [/certification|certify/i, "CERTIFICATION"],
 ];
 
-interface OsBill {
+export interface OsBill {
   id: string;
   identifier: string;
   title: string;
@@ -44,7 +44,7 @@ interface OsBill {
   openstates_url: string;
 }
 
-const STATE_BY_NAME: Record<string, string> = {
+export const STATE_BY_NAME: Record<string, string> = {
   Alabama: "AL", Alaska: "AK", Arizona: "AZ", Arkansas: "AR",
   California: "CA", Colorado: "CO", Connecticut: "CT", Delaware: "DE",
   Florida: "FL", Georgia: "GA", Hawaii: "HI", Idaho: "ID", Illinois: "IL",
@@ -59,6 +59,10 @@ const STATE_BY_NAME: Record<string, string> = {
   Vermont: "VT", Virginia: "VA", Washington: "WA", "West Virginia": "WV",
   Wisconsin: "WI", Wyoming: "WY",
 };
+
+// Second-stage title filter shared with the historical loader.
+export const ELECTION_TITLE_RE =
+  /voter|voting|ballot|election|absentee|primar(y|ies)|candidate|redistrict/i;
 
 // Deterministic status mapping from the latest action text.
 export function billStatus(action: string | null): OperationalStatus {
@@ -121,7 +125,7 @@ export async function fetchElectionBills(
     if (!state) continue; // municipal/territorial jurisdictions
     // The phrase queries match full bill text; require an election term in
     // the title so an unrelated bill quoting election code doesn't land.
-    if (!/voter|voting|ballot|election|absentee|primar(y|ies)|candidate|redistrict/i.test(bill.title)) {
+    if (!ELECTION_TITLE_RE.test(bill.title)) {
       continue;
     }
     const tags = MECHANISM_TAGS.filter(([re]) => re.test(bill.title)).map(

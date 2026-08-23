@@ -11,6 +11,8 @@
     "ingest": "tsx --env-file-if-exists=.env src/index.ts",
     "assess:backfill": "tsx --env-file-if-exists=.env src/backfill-assessments.ts",
     "reclassify:rulings": "tsx --env-file-if-exists=.env src/reclassify-rulings.ts",
+    "legislation:fetch": "tsx --env-file-if-exists=.env src/legislation-history-fetch.ts",
+    "legislation:load": "tsx --env-file-if-exists=.env src/legislation-history-load.ts",
     "baseline:compare": "tsx src/baseline-compare.ts",
     "baseline:export": "tsx src/baseline-export.ts",
     "test": "vitest run"
