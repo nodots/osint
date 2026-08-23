@@ -6,7 +6,7 @@
 // "relative to where past cycles actually sat," not an invented constant.
 export const THREAT_CALIBRATION = {
   generatedAt: "2026-08-23",
-  methodologyVersion: "2026.09.5",
+  methodologyVersion: "2026.09.6",
   cycles: [2016, 2018, 2020, 2022, 2024],
   observations: 505,
   // Cutpoints on the pooled distribution.

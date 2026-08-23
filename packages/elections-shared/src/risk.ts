@@ -33,7 +33,10 @@
 // takes a quarter off, an elected or governor-appointed official none —
 // so legislative activity no longer reads as full cooperation in states
 // whose election administration one party cannot direct.
-export const METHODOLOGY_VERSION = "2026.09.5";
+// 2026.09.6: separate opinions (dissents, concurrences docketed on their
+// own) never classify as rulings — a dissent quoting the order it dissents
+// from had counted as a second blocking injunction.
+export const METHODOLOGY_VERSION = "2026.09.6";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {

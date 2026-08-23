@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-08-23",
-  "methodologyVersion": "2026.09.5",
-  "matchedSources2026": 80,
+  "methodologyVersion": "2026.09.6",
+  "matchedSources2026": 81,
   "cycles": {
     "2016": {
       "electionDay": "2016-11-08",
@@ -414,11 +414,11 @@
       "composition": {
         "litigationExposure": 83,
         "activePressure": 67,
-        "institutionalResistance": 25
+        "institutionalResistance": 12
       },
       "volumes": {
         "dockets": 284,
-        "rulings": 78,
+        "rulings": 77,
         "blockingInjunctions": 25
       }
     },

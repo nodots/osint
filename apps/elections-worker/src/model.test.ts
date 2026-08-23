@@ -31,6 +31,25 @@ describe("ruling classifier (§13 — do not count lawsuits equally)", () => {
     ).toBe("DENIES");
   });
 
+  it("never classifies separate opinions (2026.09.6)", () => {
+    expect(
+      classifyRuling(
+        "DISSENT from 1437 Memorandum Opinion and Order Granting Motion for Preliminary Injunction, signed and issued by Judge Jerry E. Smith.",
+      ),
+    ).toBeNull();
+    expect(
+      classifyRuling(
+        "CONCURRENCE in part and dissent in part from Order granting preliminary injunction.",
+      ),
+    ).toBeNull();
+    // An order that merely notes a dissent still classifies.
+    expect(
+      classifyRuling(
+        "ORDER granting plaintiffs motion for preliminary injunction (Smith, J., dissenting).",
+      ),
+    ).toBe("BLOCKS");
+  });
+
   it("classifies granted injunctions", () => {
     expect(
       classifyRuling(

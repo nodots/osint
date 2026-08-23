@@ -89,9 +89,19 @@ export function rulingScope(
   return FEDERAL_PARTY_RE.test(parties.join(" ")) ? "US" : "STATE";
 }
 
+// A separate opinion (a dissent or concurrence docketed on its own) is not
+// an order — it grants nothing, however much of the underlying order's title
+// it quotes ("DISSENT from ... Order Granting Motion for Preliminary
+// Injunction"). Matched only as the entry's own document type or as
+// "<opinion> from <order>", so an order that merely notes "(Smith, J.,
+// dissenting)" still classifies.
+const SEPARATE_OPINION_RE =
+  /^.{0,30}\b(?:dissent|concurrence)\b|\b(?:dissent(?:ing)?|concurr(?:ence|ing))(?: in part)?(?: and dissent(?:ing)?(?: in part)?)? (?:from|to)\b/i;
+
 export function classifyRuling(description: string): RulingDirection | null {
   const text = description.replace(/\s+/g, " ");
   if (MECHANICS_RE.test(text) || STAY_RE.test(text)) return null;
+  if (SEPARATE_OPINION_RE.test(text)) return null;
   const grants = GRANT_RE.test(text);
   const denies = DENY_RE.test(text);
   if (grants === denies) return null; // neither, or contradictory — skip
