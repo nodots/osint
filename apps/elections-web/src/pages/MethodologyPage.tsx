@@ -96,6 +96,21 @@ export function MethodologyPage() {
         stands and the residual is reported with the backtest.
       </Typography>
       <Typography variant="body1">
+        State cooperation is additionally discounted by who administers the
+        state&apos;s elections (2026.09.5). Legislative activity on election
+        mechanisms can only be enlisted against the count to the extent the
+        administering institution answers to one party: where a statutorily
+        balanced board runs elections (New York&apos;s 2–2 State Board,
+        Wisconsin&apos;s 3–3 commission, Illinois&apos;s 4–4 board,
+        Hawaii&apos;s nonpartisan officer) the dimension is halved; a
+        partisan-majority board (North Carolina, Virginia, Maryland,
+        Oklahoma, South Carolina) takes a quarter off; an elected or
+        governor-appointed chief election official carries no discount.
+        Classifications follow the CRS and EAC/NCSL state profiles, are
+        held constant across the backtest window, and are published per
+        state in the API&apos;s state profiles.
+      </Typography>
+      <Typography variant="body1">
         Blocked, enjoined, or overturned actions stop feeding vulnerability
         and feed institutional resistance instead (nationwide blocks at{" "}
         {NATIONAL_RESISTANCE_WEIGHT} weight per state), and vulnerability is

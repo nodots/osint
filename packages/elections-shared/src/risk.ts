@@ -27,7 +27,13 @@
 // mechanics; nationwide scope ignores federal parties on the plaintiff
 // side of the caption; identical orders on transferred or consolidated
 // dockets dedupe.
-export const METHODOLOGY_VERSION = "2026.09.4";
+// 2026.09.5: stateCooperation is discounted by the administering
+// institution's structural insulation (administration.ts) — a statutorily
+// balanced election board halves the dimension, a partisan-majority board
+// takes a quarter off, an elected or governor-appointed official none —
+// so legislative activity no longer reads as full cooperation in states
+// whose election administration one party cannot direct.
+export const METHODOLOGY_VERSION = "2026.09.5";
 
 // All dimensions are normalized to [0,1].
 export interface VulnerabilityDimensions {

@@ -1,5 +1,6 @@
 import { writeFileSync } from "node:fs";
 import pg from "pg";
+import { METHODOLOGY_VERSION } from "@elections-tracker/shared";
 
 // Export the historical-baseline series and summary stats to a static JSON
 // consumed by the web app's Baseline page. Baselines are immutable
@@ -110,9 +111,9 @@ for (const [cycle, day] of Object.entries(CYCLE_DAYS)) {
 
 const out = {
   generatedAt: new Date().toISOString().slice(0, 10),
-  methodologyVersion: "2026.09.4",
-  // 2026 recomputed without the state-legislation source (which cannot be
-  // replayed historically) — the matched-sources number for cross-cycle claims.
+  methodologyVersion: METHODOLOGY_VERSION,
+  // 2026 recomputed without the state-legislation source — retained as a
+  // sensitivity check now that baselines carry historical legislation.
   matchedSources2026: await sensitivity(),
   cycles,
 };

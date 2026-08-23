@@ -9,6 +9,10 @@ import {
 } from "@elections-tracker/shared";
 import { effectiveStatus } from "@elections-tracker/shared";
 import {
+  STATE_ADMINISTRATION,
+  administrationInsulation,
+} from "@elections-tracker/shared";
+import {
   classifyRuling,
   rulingDedupKey,
   rulingScope,
@@ -339,5 +343,30 @@ describe("anti-bias invariance (§44 — mirrored hypotheticals)", () => {
   it("suppresses vulnerability symmetrically for either side's injunctions", () => {
     const raw = processVulnerability(dims);
     expect(applyResistance(raw, 0.8)).toBeLessThan(applyResistance(raw, 0.2));
+  });
+});
+
+describe("administration insulation (2026.09.5 — who runs the election matters)", () => {
+  it("halves stateCooperation for statutorily balanced boards", () => {
+    expect(administrationInsulation("NY")).toBe(0.5);
+    expect(administrationInsulation("WI")).toBe(0.5);
+    expect(administrationInsulation("IL")).toBe(0.5);
+  });
+
+  it("gives partisan-majority boards a partial discount", () => {
+    expect(administrationInsulation("NC")).toBe(0.75);
+    expect(administrationInsulation("VA")).toBe(0.75);
+  });
+
+  it("leaves elected and governor-appointed officials undiscounted", () => {
+    expect(administrationInsulation("GA")).toBe(1);
+    expect(administrationInsulation("PA")).toBe(1);
+    expect(administrationInsulation("TX")).toBe(1);
+  });
+
+  it("covers all fifty states and defaults unknown jurisdictions to 1", () => {
+    expect(Object.keys(STATE_ADMINISTRATION)).toHaveLength(50);
+    expect(administrationInsulation("DC")).toBe(1);
+    expect(administrationInsulation("PR")).toBe(1);
   });
 });

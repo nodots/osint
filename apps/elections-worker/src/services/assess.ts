@@ -1,5 +1,7 @@
 import {
   ACTIVE_PRESSURE_TYPES,
+  STATE_ADMINISTRATION,
+  administrationInsulation,
   CASE_PRESSURE_WEIGHT,
   CASE_WEIGHT,
   DIMENSION_EVENT_TYPES,
@@ -277,16 +279,21 @@ export async function runAssessments(
   for (const [state, acc] of byState) {
     const dims = {} as VulnerabilityDimensions;
     for (const d of DIMENSIONS) dims[d] = saturate(acc.vuln[d]);
+    // 2026.09.5: an insulated administering institution discounts how much
+    // state directives read as cooperation with intervention.
+    dims.stateCooperation *= administrationInsulation(state);
     const vulnerability = applyResistance(
       processVulnerability(dims),
       saturate(acc.resistance),
     );
     await pool.query(
-      `INSERT INTO state_profiles (state, process_vulnerability, dimensions, updated_at)
-       VALUES ($1, $2, $3, now())
+      `INSERT INTO state_profiles (state, process_vulnerability, dimensions,
+                                   administration_control, updated_at)
+       VALUES ($1, $2, $3, $4, now())
        ON CONFLICT (state) DO UPDATE SET
          process_vulnerability = EXCLUDED.process_vulnerability,
          dimensions = EXCLUDED.dimensions,
+         administration_control = EXCLUDED.administration_control,
          updated_at = now()`,
       [
         state,
@@ -296,6 +303,7 @@ export async function runAssessments(
           institutionalResistance: saturate(acc.resistance),
           activePressure: blendPressure(acc.pressure, nationalPressure),
         }),
+        STATE_ADMINISTRATION[state] ?? null,
       ],
     );
   }
@@ -351,6 +359,9 @@ export async function runAssessments(
       dims[d] = round(saturate(signal));
       totalSignal += signal;
     }
+    dims.stateCooperation = round(
+      dims.stateCooperation * administrationInsulation(race.state),
+    );
     const resistance = round(
       saturate(stateAcc.resistance + (extra?.resistance ?? 0)),
     );
@@ -434,6 +445,14 @@ export async function runAssessments(
           derivation: "event-signal",
           ...(retrodiction ? { retrodiction: true } : {}),
           state: race.state,
+          ...(administrationInsulation(race.state) < 1
+            ? {
+                administration: {
+                  structure: STATE_ADMINISTRATION[race.state],
+                  insulation: administrationInsulation(race.state),
+                },
+              }
+            : {}),
           rawVulnerability: round(rawV),
           electoralExposure: round(exposure),
           nationalTightness: round(tightness),
