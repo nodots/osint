@@ -42,3 +42,19 @@ export const RATING_ORDER = [
 export function ratingLabel(rating: string | null): string {
   return rating ? (RATING_LABELS[rating] ?? rating) : "No rating";
 }
+
+// Intervention-relevance ramp (map spotlights and legend): single warm hue
+// anchored on the platform accent #da654c, dark-surface-first. Index is
+// 0–1 in the data, 0–100 in display.
+export const RELEVANCE_RAMP: [number, string][] = [
+  [0, "#1f1f1f"],
+  [0.15, "#4a2e27"],
+  [0.25, "#7c4335"],
+  [0.35, "#ac5340"],
+  [0.45, "#da654c"],
+  [0.55, "#ff8a66"],
+];
+
+export const RELEVANCE_RAMP_CSS = `linear-gradient(90deg, ${RELEVANCE_RAMP.map(
+  ([, c]) => c,
+).join(", ")})`;

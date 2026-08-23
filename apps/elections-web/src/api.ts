@@ -71,6 +71,8 @@ export interface DistrictFeatureProperties {
   projectedMargin: number | null;
   democraticCandidate: string | null;
   republicanCandidate: string | null;
+  interventionRelevance: number | null;
+  centroid: [number, number];
 }
 
 export function fetchDistrictsGeoJSON(signal?: AbortSignal) {

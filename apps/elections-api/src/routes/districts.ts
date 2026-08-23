@@ -33,7 +33,12 @@ districtsRouter.get("/geojson", async (_req, res, next) => {
                       'rating', r.rating,
                       'projectedMargin', r.projected_margin,
                       'democraticCandidate', r.democratic_candidate,
-                      'republicanCandidate', r.republican_candidate
+                      'republicanCandidate', r.republican_candidate,
+                      'interventionRelevance', a.subversion_risk,
+                      'centroid', jsonb_build_array(
+                        round(ST_X(ST_PointOnSurface(d.geom::geometry))::numeric, 4),
+                        round(ST_Y(ST_PointOnSurface(d.geom::geometry))::numeric, 4)
+                      )
                     )
                   ) AS feature
              FROM districts d
@@ -44,6 +49,13 @@ districtsRouter.get("/geojson", async (_req, res, next) => {
                      WHERE election_type = 'HOUSE' ORDER BY cycle DESC
                      LIMIT 1
                   )
+             LEFT JOIN LATERAL (
+               SELECT subversion_risk::float8
+                 FROM race_risk_assessments
+                WHERE race_id = r.id
+                ORDER BY assessed_at DESC
+                LIMIT 1
+             ) a ON true
             WHERE d.geom IS NOT NULL
          ) features`,
     );
