@@ -76,7 +76,9 @@ export interface DistrictFeatureProperties {
 }
 
 export function fetchDistrictsGeoJSON(signal?: AbortSignal) {
-  return request<GeoJSON.FeatureCollection>("/districts/geojson", signal);
+  // The endpoint is browser-cached for an hour; bump v when the feature
+  // contract changes so old cached payloads can't miss new properties.
+  return request<GeoJSON.FeatureCollection>("/districts/geojson?v=2", signal);
 }
 
 export function fetchEvents(signal?: AbortSignal) {
